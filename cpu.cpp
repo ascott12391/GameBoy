@@ -184,6 +184,8 @@ void CPU::OP_0F() //Rotate A right
 
 void CPU::OP_10() //STOP, puts GB in some kind of rest mode. I don't *think* it's necessary. Right now I'm just gonna crash it and hopefully that will be good enough
 {
+    //And if you really want to take the word crash literally, just uncomment the line below
+    //*(int*)0=0xDEADBEEF;
     exit(10); //Exits w/ 10 so if I see that code I know opcode 0x10 was called
 }
 
@@ -558,12 +560,86 @@ void CPU::OP_3E() //Load 8-bit immediate into A
 void CPU::OP_3F() //Flip carry
 {
     if (checkCarry()){resCarry();}
+    else {setCarry();}
     resSub();
     resHalfCarry();
 }
 
 //Now begins the long slog of dozens of load instructions
 
-//And after that dozens of add instructions :/
+//And after that literal hundreds of simple math instructions :/
 
-//At least I can copy paste for most
+//At least I can copy paste for most of it
+
+
+void CPU::OP_40() {registers[1].hi = registers[1].hi;} //Load B into B. Yes, that was my reaction as well
+void CPU::OP_41() {registers[1].hi = registers[1].lo;} //C into B
+void CPU::OP_42() {registers[1].hi = registers[2].hi;} //D into B
+void CPU::OP_43() {registers[1].hi = registers[2].lo;} //etc
+void CPU::OP_44() {registers[1].hi = registers[3].hi;}
+void CPU::OP_45() {registers[1].hi = registers[3].lo;}
+void CPU::OP_46() {registers[1].hi = memory[findAddr(3)]; timer--;} //Memory address pointed to by HL into B
+void CPU::OP_47() {registers[1].hi = registers[0].hi;}
+
+void CPU::OP_48() {registers[1].lo = registers[1].hi;} //Same as above but w/ C instead of B for these
+void CPU::OP_49() {registers[1].lo = registers[1].lo;}
+void CPU::OP_4A() {registers[1].lo = registers[2].hi;}
+void CPU::OP_4B() {registers[1].lo = registers[2].lo;}
+void CPU::OP_4C() {registers[1].lo = registers[3].hi;}
+void CPU::OP_4D() {registers[1].lo = registers[3].lo;}
+void CPU::OP_4E() {registers[1].lo = memory[findAddr(3)]; timer--;}
+void CPU::OP_4F() {registers[1].lo = registers[0].hi;}
+
+void CPU::OP_50() {registers[2].hi = registers[1].hi;} //Next verse, same as the first... (but with D)
+void CPU::OP_51() {registers[2].hi = registers[1].lo;}
+void CPU::OP_52() {registers[2].hi = registers[2].hi;}
+void CPU::OP_53() {registers[2].hi = registers[2].lo;}
+void CPU::OP_54() {registers[2].hi = registers[3].hi;}
+void CPU::OP_55() {registers[2].hi = registers[3].lo;}
+void CPU::OP_56() {registers[2].hi = memory[findAddr(3)]; timer--;}
+void CPU::OP_57() {registers[2].hi = registers[0].hi;}
+
+void CPU::OP_58() {registers[2].lo = registers[1].hi;} //E
+void CPU::OP_59() {registers[2].lo = registers[1].lo;}
+void CPU::OP_5A() {registers[2].lo = registers[2].hi;}
+void CPU::OP_5B() {registers[2].lo = registers[2].lo;}
+void CPU::OP_5C() {registers[2].lo = registers[3].hi;}
+void CPU::OP_5D() {registers[2].lo = registers[3].lo;}
+void CPU::OP_5E() {registers[2].lo = memory[findAddr(3)]; timer--;}
+void CPU::OP_5F() {registers[2].lo = registers[0].hi;}
+
+void CPU::OP_60() {registers[3].hi = registers[1].hi;} //H
+void CPU::OP_61() {registers[3].hi = registers[1].lo;}
+void CPU::OP_62() {registers[3].hi = registers[2].hi;}
+void CPU::OP_63() {registers[3].hi = registers[2].lo;}
+void CPU::OP_64() {registers[3].hi = registers[3].hi;}
+void CPU::OP_65() {registers[3].hi = registers[3].lo;}
+void CPU::OP_66() {registers[3].hi = memory[findAddr(3)]; timer--;}
+void CPU::OP_67() {registers[3].hi = registers[0].hi;}
+
+void CPU::OP_68() {registers[3].lo = registers[1].hi;} //I'm so bored. Also L
+void CPU::OP_69() {registers[3].lo = registers[1].lo;}
+void CPU::OP_6A() {registers[3].lo = registers[2].hi;}
+void CPU::OP_6B() {registers[3].lo = registers[2].lo;}
+void CPU::OP_6C() {registers[3].lo = registers[3].hi;}
+void CPU::OP_6D() {registers[3].lo = registers[3].lo;}
+void CPU::OP_6E() {registers[3].lo = memory[findAddr(3)]; timer--;}
+void CPU::OP_6F() {registers[3].lo = registers[0].hi;}
+
+void CPU::OP_70() {memory[findAddr(3)] = registers[1].hi; timer--;} //Pointed to by HL
+void CPU::OP_71() {memory[findAddr(3)] = registers[1].lo; timer--;}
+void CPU::OP_72() {memory[findAddr(3)] = registers[2].hi; timer--;}
+void CPU::OP_73() {memory[findAddr(3)] = registers[2].lo; timer--;}
+void CPU::OP_74() {memory[findAddr(3)] = registers[3].hi; timer--;}
+void CPU::OP_75() {memory[findAddr(3)] = registers[3].lo; timer--;}
+void CPU::OP_76() {exit(76);} //Hey, this one's different! It's actually the halt code! Interesting! Not really implemented yet though, just gonna exit.
+void CPU::OP_77() {memory[findAddr(3)] = registers[0].hi; timer--;}
+
+void CPU::OP_78() {registers[0].hi = registers[1].hi;} //A
+void CPU::OP_79() {registers[0].hi = registers[1].lo;}
+void CPU::OP_7A() {registers[0].hi = registers[2].hi;}
+void CPU::OP_7B() {registers[0].hi = registers[2].lo;}
+void CPU::OP_7C() {registers[0].hi = registers[3].hi;}
+void CPU::OP_7D() {registers[0].hi = registers[3].lo;}
+void CPU::OP_7E() {registers[0].hi = memory[findAddr(3)]; timer--;}
+void CPU::OP_7F() {registers[0].hi = registers[0].hi;} //...and scene. Onto the adds
