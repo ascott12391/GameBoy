@@ -13,6 +13,8 @@
 #include "CPU.hpp"
 #include "MMU.hpp"
 
+//LAST ONE DONE WAS 0x37
+
 extern int cycles; //Does nothing. Just here so shit don't break.
 void NOOP(); //0x00
 void JPNN(); //0xC3
@@ -46,4 +48,9 @@ bool halt(); //0x76
 void LD_Arr(uint8_t opcode); //0x0A, 0x1A, 0x2A, 0x3A
 void DAA(); //0x27
 void CPL(); //0x2F
+void JRNCs8(); //0x30
+void INCHL(); //0x34
+void DECHL(); //0x35
+void LDHL_d8(); //0x36
+void SCF(); //0x37
 #endif

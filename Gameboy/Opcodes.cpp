@@ -45,6 +45,14 @@ void JRNZs8() //Jump some steps ahead if zero flag is 0
     
 }
 
+void JRNZs8() //Jump some steps ahead if carry flag is 0
+{
+    int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
+    if (Fc()) {incPC(2); cycles+=3;}
+    else {   setPC(getPC()+2+offset); cycles+=2;}
+    
+}
+
 void JRZs8() //Jump some steps ahead if zero flag is 1
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
@@ -80,7 +88,7 @@ void LD_rr(uint8_t opcode) //Load something into something else
     int dest = (opcode >> 3)&7; //Next three determine source
     if (src == 6) //This and the next one are cases for loading something into the address POINTED to by HL
     {
-        reg_ret(dest) = read_byte(readReg(H));
+        write_reg(dest, read_byte(readReg(H)));
         cycles += 2;
     }
     else if (dest == 6) //I know what you may be wondering. "But Alex, what if you have an opcode that reads HL into HL?"
@@ -90,7 +98,7 @@ void LD_rr(uint8_t opcode) //Load something into something else
     }
     else
     {
-        reg_ret(dest) = reg_ret(src); //Don't ask me why load B into B or whatever is a thing though (it is)
+        write_reg(dest, reg_ret(src)); //Don't ask me why load B into B or whatever is a thing though (it is)
         cycles++;
     }
     incPC(1);
@@ -106,7 +114,7 @@ void LD_d8(uint8_t opcode) //Load immediate 8-bit operand into w/e
     }
     else
     {
-        reg_ret(dest) = read_byte(getPC()+1);
+        write_reg(dest, read_byte(getPC()+1));
         cycles += 2;
     }
     incPC(2);
@@ -114,7 +122,7 @@ void LD_d8(uint8_t opcode) //Load immediate 8-bit operand into w/e
 
 void LDAa16() //Load the contents specificed by the immediate 16 bit reg into A
 {
-    reg_ret(A) = read_word(getPC()+1);
+    write_reg(A, read_word(getPC()+1));
     incPC(3);
     cycles += 4;
 }
@@ -189,6 +197,13 @@ void LD_Arr(uint8_t opcode) //Opposite of above, write into A
     }
     incPC(1);
     cycles+=2;
+}
+
+void LDHL_d8() //Load 8-bit immediate into location shown by HL
+{
+    write_byte(read_byte(getPC()+1), readReg(H));
+    incPC(2);
+    cycles += 3;
 }
 
 //MATH
@@ -360,6 +375,27 @@ void CPL() //Flip A's bits
     incPC(1);
     cycles++;
 }
+
+void INCHL() //Increase the contents of memory specified by HL
+{
+    read_byte(readReg(H))+1 > 0xFF?setH():zeroH();
+    write_byte(readReg(H), read_byte(readReg(H))+1);
+    zeroN();
+    read_byte(readReg(H)) == 0?setZ():zeroZ();
+    incPC(3);
+    cycles+=3;
+}
+
+void DECHL() //Increase the contents of memory specified by HL
+{
+    read_byte(readReg(H))-1 < 0?setH():zeroH();
+    write_byte(readReg(H), read_byte(readReg(H))-1);
+    setN();
+    read_byte(readReg(H)) == 0?setZ():zeroZ();
+    incPC(3);
+    cycles+=3;
+}
+
 
 //STACK
 
