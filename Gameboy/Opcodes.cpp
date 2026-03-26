@@ -22,6 +22,24 @@ bool halt()
     return true;
 } //Maybe better way to do this, but for now...
 
+void SCF() //Set carry flag. Hey look, an easy one
+{
+    setC();
+    zeroH();
+    zeroN();
+    incPC(1);
+    cycles++;
+}
+
+void CCF() //Flip carry flag. Another easy one
+{
+    Fc()?zeroC():setC();
+    zeroH();
+    zeroN();
+    incPC(1);
+    cycles++;
+}
+
 
 //JUMPS
 void JPNN() //Jump to 16 bit immediate
@@ -60,6 +78,13 @@ void JRZs8() //Jump some steps ahead if zero flag is 1
     else {incPC(2); cycles+=2;}
 }
 
+void JRCs8() //Jump some steps ahead if carry flag is 1
+{
+    int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
+    if (Fc()) {setPC(getPC()+2+offset); cycles+=3;}
+    else {incPC(2); cycles+=2;}
+}
+
 void Calla16() //Jump with return to the immediate 16 bit address
 {
     write_byte(getSP(),(getPC()+3)>>8);
@@ -88,7 +113,7 @@ void LD_rr(uint8_t opcode) //Load something into something else
     int dest = (opcode >> 3)&7; //Next three determine source
     if (src == 6) //This and the next one are cases for loading something into the address POINTED to by HL
     {
-        write_reg(dest, read_byte(readReg(H)));
+        writeSmallReg(dest, read_byte(readReg(H)));
         cycles += 2;
     }
     else if (dest == 6) //I know what you may be wondering. "But Alex, what if you have an opcode that reads HL into HL?"
@@ -98,7 +123,7 @@ void LD_rr(uint8_t opcode) //Load something into something else
     }
     else
     {
-        write_reg(dest, reg_ret(src)); //Don't ask me why load B into B or whatever is a thing though (it is)
+        writeSmallReg(dest, reg_ret(src)); //Don't ask me why load B into B or whatever is a thing though (it is)
         cycles++;
     }
     incPC(1);
@@ -111,10 +136,15 @@ void LD_d8(uint8_t opcode) //Load immediate 8-bit operand into w/e
     {
         write_byte(readReg(H), read_byte(getPC()+1));
         cycles += 3;
+    }    
+    else if (dest == 7)
+    {
+        writeSmallReg(A, read_byte(getPC()+1));
+        cycles += 2;
     }
     else
     {
-        write_reg(dest, read_byte(getPC()+1));
+        writeSmallReg(dest, read_byte(getPC()+1));
         cycles += 2;
     }
     incPC(2);
@@ -122,7 +152,7 @@ void LD_d8(uint8_t opcode) //Load immediate 8-bit operand into w/e
 
 void LDAa16() //Load the contents specificed by the immediate 16 bit reg into A
 {
-    write_reg(A, read_word(getPC()+1));
+    writeSmallReg(A, read_word(getPC()+1));
     incPC(3);
     cycles += 4;
 }
@@ -259,13 +289,22 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
         write_byte(readReg(H), data);
         cycles += 3;
     }
+    else if (dest == 7) //This one is actually A, not F. Exact same as below, but different encoding on the opcode
+    {
+        data = reg_ret(A);
+        if ((data &0xF)== 0xFF) {setH();}
+        else {zeroH();}
+        data++;
+        writeSmallReg(A, data);
+        cycles++;
+    }
     else
     {
         data = reg_ret(dest);
         if ((data &0xF)== 0xFF) {setH();}
         else {zeroH();}
         data++;
-        reg_ret(dest) = data;
+        writeSmallReg(dest, data);
         cycles++;
     }
     if (data == 0) {setZ();}
@@ -287,13 +326,22 @@ void dec_rr(uint8_t opcode) //Same as above, but decreases instead
         write_byte(readReg(3), data);
         cycles += 3;
     }
+    else if (dest == 7)
+    {
+        data = reg_ret(A);
+        if ((data &0xF) == 0x00) {setH();}
+        else {zeroH();}
+        data--;
+        writeSmallReg(A, data);
+        cycles++;
+    }
     else
     {
         data = reg_ret(dest);
         if ((data &0xF) == 0x00) {setH();}
         else {zeroH();}
         data--;
-        reg_ret(dest) = data;
+        writeSmallReg(dest, data);
         cycles++;
     }
     if (data == 0) {setZ();}
@@ -350,7 +398,7 @@ void add_HLrr(uint8_t opcode) //Add some register pair into HL
     cycles += 2;
 }
 
-void DAA() //converts A into BCD
+void DAA() //converts A into BCD. This one was a pain
 {
     if (!N()) {
         if (Fc() || reg_ret(A) > 0x99) { writeSmallReg(A, reg_ret(A)+0x60); setC();}
