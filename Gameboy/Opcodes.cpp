@@ -48,7 +48,35 @@ void JPNN() //Jump to 16 bit immediate
     cycles += 4;
 }
 
-void JRs8() //Jump 8 steps ahead in the PC
+void JPNZa16() //Jump to 16 bit immediate if Z flag is 0
+{
+    if (!Z())
+    {
+        setPC(read_word(getPC()+1));
+        cycles += 4;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
+void JPNCa16() //Jump to 16 bit immediate if C flag is 0
+{
+    if (!Fc())
+    {
+        setPC(read_word(getPC()+1));
+        cycles += 4;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
+void JRs8() //Jump some steps ahead in the PC
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
     setPC(getPC()+2+offset);
@@ -63,7 +91,7 @@ void JRNZs8() //Jump some steps ahead if zero flag is 0
     
 }
 
-void JRNZs8() //Jump some steps ahead if carry flag is 0
+void JRNCs8() //Jump some steps ahead if carry flag is 0
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
     if (Fc()) {incPC(2); cycles+=3;}
@@ -95,6 +123,42 @@ void Calla16() //Jump with return to the immediate 16 bit address
     cycles+=6;
 }
 
+void CALLNZa16() //You should get the idea by now, do the thing if the thing is zero
+{
+    if (!Z())
+    {
+        write_byte(getSP(),(getPC()+3)>>8);
+        changeSP(-1);
+        write_byte(SP, (getPC()+3)&0xFF);
+        changeSP(-1);
+        setPC(read_word(getPC()+1));
+        cycles+=6;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
+void CALLNCa16() //You should get the idea by now, do the thing if the thing is zero
+{
+    if (!Fc())
+    {
+        write_byte(getSP(),(getPC()+3)>>8);
+        changeSP(-1);
+        write_byte(SP, (getPC()+3)&0xFF);
+        changeSP(-1);
+        setPC(read_word(getPC()+1));
+        cycles+=6;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
 void Ret() //Return
 {
     uint8_t lo = read_byte(getSP());
@@ -102,6 +166,59 @@ void Ret() //Return
     uint8_t hi = read_byte(getSP());
     changeSP(1);
     setPC((hi << 8) | lo);
+    cycles += 4;
+}
+
+void ret_nz() //Return if the Z flag is 0
+{
+    if (!Z())
+    {
+        uint8_t lo = read_byte(getSP());
+        changeSP(1);
+        uint8_t hi = read_byte(getSP());
+        changeSP(1);
+        setPC((hi << 8) | lo);
+        cycles += 5;
+    }
+    else
+    {
+        incPC(1);
+        cycles+=2;
+    }
+}
+
+void ret_nc() //Return if the C flag is 0
+{
+    if (!Fc())
+    {
+        uint8_t lo = read_byte(getSP());
+        changeSP(1);
+        uint8_t hi = read_byte(getSP());
+        changeSP(1);
+        setPC((hi << 8) | lo);
+        cycles += 5;
+    }
+    else
+    {
+        incPC(1);
+        cycles+=2;
+    }
+}
+
+void RST(uint8_t opcode) //This one looks weird (at least it does to me), basically just jumps to a specific address in memory encoded by the opcode itself
+{
+    uint16_t addr = opcode & 0x38;
+
+    uint16_t pc = getPC() + 1;
+
+    changeSP(-1);
+    write_byte(getSP(), (pc >> 8) & 0xFF);
+
+    changeSP(-1);
+    write_byte(getSP(), pc & 0xFF);
+
+    setPC(addr);
+
     cycles += 4;
 }
 
@@ -644,6 +761,72 @@ void DECHL() //Increase the contents of memory specified by HL
     cycles+=3;
 }
 
+void ADDAd8() //Add 8 bit immediate to A
+{
+    uint8_t a = reg_ret(A); //Just trying to minimize function calls here
+    uint8_t value = read_byte(getPC()+1);
+    uint16_t result = a + value;
+
+    ((a & 0xF) + (value & 0xF) > 0xF) ? setH() : zeroH();
+    (result > 0xFF) ? setC() : zeroC();
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result&0xFF);
+    incPC(2);
+    cycles+=2;
+}
+
+void SUBAd8() //Subs 8 bit immediate to A
+{
+    uint8_t a = reg_ret(A);
+    uint8_t value = read_byte(getPC()+1);
+    uint16_t result = a - value;
+
+    ((a & 0xF) < ((value & 0xF)))) ? setH() : zeroH();
+    (a < (value)) ? setC() : zeroC();
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    setN();
+
+    writeSmallReg(A, result & 0xFF);
+
+    incPC(2);
+    cycles += 2;
+}
+
+void ANDAd8() //Add 8 bit immediate to A
+{
+    uint8_t a = reg_ret(A); //Just trying to minimize function calls here
+    uint8_t value = read_byte(getPC()+1);
+    uint8_t result = a & value;
+
+    setH();
+    zeroC();
+    (result== 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result);
+
+    incPC(2);
+    cycles += 2;
+}
+
+void ORAd8() //Add 8 bit immediate to A
+{
+    uint8_t a = reg_ret(A); //Just trying to minimize function calls here
+    uint8_t value = read_byte(getPC()+1);
+    uint8_t result = a | value;
+
+    zeroH();
+    zeroC();
+    ((result) == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result);
+
+    incPC(2);
+    cycles += 2;
+}
 
 //STACK
 

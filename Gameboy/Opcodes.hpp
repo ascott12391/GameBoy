@@ -13,7 +13,7 @@
 #include "CPU.hpp"
 #include "MMU.hpp"
 
-//LAST ONE DONE WAS 0xBF
+//LAST ONE DONE WAS 0xC7
 
 extern int cycles; //Does nothing. Just here so shit don't break.
 void NOOP(); //0x00
@@ -61,4 +61,15 @@ void and_rr(); //0xA0-0xA7
 void xor_rr(); //0xA8-0xAF
 void or_rr(); //0xB0-0xB7
 void cp_rr(); //0xB8-0xBF
+void ret_nz(); //0xC0
+void ret_nc(); //0xD0
+void JPNZa16(); //0xC2
+void JPNCa16(); //0xD2
+void CALLNZa16(); //0xC4
+void CALLNCa16(); //0xD4
+void ADDAd8(); //0xC6
+void SUBAd8(); //0xD6
+void ANDAd8(); //0xE6
+void ORAd8(); //0xF6
+void RST(uint8_t opcode); //0xC7, 0xD7, 0xE7, 0xF7, 0xCF, 0xDF, 0xEF, 0xFF
 #endif
