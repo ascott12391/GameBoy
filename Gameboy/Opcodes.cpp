@@ -108,7 +108,7 @@ void Ret() //Return
 
 //LOADS
 void LD_rr(uint8_t opcode) //Load something into something else
-{
+{//This will actually write to F not A. I am way too braindead to fix now [asdf]
     int src = opcode&7; //Last three bits determine where load is coming from
     int dest = (opcode >> 3)&7; //Next three determine source
     if (src == 6) //This and the next one are cases for loading something into the address POINTED to by HL
@@ -348,6 +348,206 @@ void dec_rr(uint8_t opcode) //Same as above, but decreases instead
     else {zeroZ();}
     setN();
     incPC(1);
+}
+
+void add_rr(uint8_t opcode) //Add regs together, store in A
+{
+    uint8_t a = reg_ret(A);
+    uint8_t carry = (opcode & 0x08) ? Fc() : 0; //This checks if carry is needed. It is for 0x87-0x8F
+    uint8_t value;
+    int dest = opcode & 0x07;
+
+    if (dest == 6) // Thingie pointed to by HL
+    {
+        value = read_byte(readReg(H));
+        cycles += 1; // extra cycle for memory access
+    }
+    else if(dest == 7)
+    {
+        value = a; //This is when we add A to A. I have it as enum 6, so I need a special case here
+    }
+    else
+    {
+        value = reg_ret(dest);
+    }
+
+    uint16_t result = a + value + carry;
+
+    ((a & 0xF) + (value & 0xF) + carry > 0xF) ? setH() : zeroH();
+    (result > 0xFF) ? setC() : zeroC();
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result & 0xFF);
+
+    incPC(1);
+    cycles += 1;
+}
+
+void sub_rr(uint8_t opcode) //Subs regs, store in A
+{
+    uint8_t a = reg_ret(A);
+    uint8_t carry = (opcode & 0x08) ? Fc() : 0; //This checks if carry is needed. It is for 0x97-0x9F
+    uint8_t value;
+    int dest = opcode & 0x07;
+
+    if (dest == 6) // Thingie pointed to by HL
+    {
+        value = read_byte(readReg(H));
+        cycles += 1; // extra cycle for memory access
+    }
+    else if(dest == 7)
+    {
+        value = a; //This is when we sub A to A. Mostly zero, but gets weird when carry gets involved
+    }
+    else
+    {
+        value = reg_ret(dest);
+    }
+
+    uint16_t result = a - value - carry;
+
+    ((a & 0xF) < ((value & 0xF) + carry))) ? setH() : zeroH();
+    (a < (value + carry)) ? setC() : zeroC();
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    setN();
+
+    writeSmallReg(A, result & 0xFF);
+
+    incPC(1);
+    cycles += 1;
+}
+
+void compares_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is affected
+{
+    uint8_t a = reg_ret(A);
+    uint8_t carry = (opcode & 0x08) ? Fc() : 0; //This checks if carry is needed. It is for 0x97-0x9F
+    uint8_t value;
+    int dest = opcode & 0x07;
+
+    if (dest == 6) // Thingie pointed to by HL
+    {
+        value = read_byte(readReg(H));
+        cycles += 1; // extra cycle for memory access
+    }
+    else if(dest == 7)
+    {
+        value = a; //This is when we sub A to A. Mostly zero, but gets weird when carry gets involved
+    }
+    else
+    {
+        value = reg_ret(dest);
+    }
+
+    uint16_t result = a - value - carry;
+
+    ((a & 0xF) < ((value & 0xF) + carry))) ? setH() : zeroH();
+    (a < (value + carry)) ? setC() : zeroC();
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    setN();
+
+
+    incPC(1);
+    cycles += 1;
+}
+
+void and_rr(uint8_t opcode) //Ands regs, store in A
+{
+    uint8_t a = reg_ret(A);
+    uint8_t value;
+    int dest = opcode & 0x07;
+
+    if (dest == 6) // Thingie pointed to by HL
+    {
+        value = read_byte(readReg(H));
+        cycles += 1; // extra cycle for memory access
+    }
+    else if(dest == 7)
+    {
+        value = a;
+    }
+    else
+    {
+        value = reg_ret(dest);
+    }
+
+    uint8_t result = a & value;
+
+    setH(); //Half carry is always set on this
+    zeroC();
+    (result == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result);
+
+    incPC(1);
+    cycles += 1;
+}
+
+void xor_rr(uint8_t opcode) //XORs regs, store in A
+{
+    uint8_t a = reg_ret(A);
+    uint8_t value;
+    int dest = opcode & 0x07;
+
+    if (dest == 6) // Thingie pointed to by HL
+    {
+        value = read_byte(readReg(H));
+        cycles += 1; // extra cycle for memory access
+    }
+    else if(dest == 7)
+    {
+        value = a;
+    }
+    else
+    {
+        value = reg_ret(dest);
+    }
+
+    uint8_t result = a ^ value;
+
+    zeroH();
+    zeroC();
+    (result == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result);
+
+    incPC(1);
+    cycles += 1;
+}
+
+void or_rr(uint8_t opcode) //ORs regs, store in A
+{
+    uint8_t a = reg_ret(A);
+    uint8_t value;
+    int dest = opcode & 0x07;
+
+    if (dest == 6) // Thingie pointed to by HL
+    {
+        value = read_byte(readReg(H));
+        cycles += 1; // extra cycle for memory access
+    }
+    else if(dest == 7)
+    {
+        value = a;
+    }
+    else
+    {
+        value = reg_ret(dest);
+    }
+
+    uint8_t result = a | value;
+
+    zeroH();
+    zeroC();
+    (result == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result);
+
+    incPC(1);
+    cycles += 1;
 }
 
 void inc_RR(uint8_t opcode) //Time for the whole registers. Supposedly doesn't check flags, so...

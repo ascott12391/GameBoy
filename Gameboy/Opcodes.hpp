@@ -13,7 +13,7 @@
 #include "CPU.hpp"
 #include "MMU.hpp"
 
-//LAST ONE DONE WAS 0x7F
+//LAST ONE DONE WAS 0xBF
 
 extern int cycles; //Does nothing. Just here so shit don't break.
 void NOOP(); //0x00
@@ -55,4 +55,10 @@ void LDHL_d8(); //0x36
 void SCF(); //0x37
 void JRCs8(); //0x38
 void CCF(); //0x3F
+void add_rr(); //0x80-0x8F
+void sub_rr(); //0x90-0x9F
+void and_rr(); //0xA0-0xA7
+void xor_rr(); //0xA8-0xAF
+void or_rr(); //0xB0-0xB7
+void cp_rr(); //0xB8-0xBF
 #endif
