@@ -76,6 +76,34 @@ void JPNCa16() //Jump to 16 bit immediate if C flag is 0
     }
 }
 
+void JPNZa16() //Jump to 16 bit immediate if Z flag is 1
+{
+    if (Z())
+    {
+        setPC(read_word(getPC()+1));
+        cycles += 4;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
+void JPNCa16() //Jump to 16 bit immediate if C flag is 1
+{
+    if (Fc())
+    {
+        setPC(read_word(getPC()+1));
+        cycles += 4;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
 void JRs8() //Jump some steps ahead in the PC
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
@@ -159,6 +187,42 @@ void CALLNCa16() //You should get the idea by now, do the thing if the thing is 
     }
 }
 
+void CALLZa16() //You should get the idea by now, do the thing if the thing is one
+{
+    if (Z())
+    {
+        write_byte(getSP(),(getPC()+3)>>8);
+        changeSP(-1);
+        write_byte(SP, (getPC()+3)&0xFF);
+        changeSP(-1);
+        setPC(read_word(getPC()+1));
+        cycles+=6;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
+void CALLCa16() //You should get the idea by now, do the thing if the thing is one
+{
+    if (Fc())
+    {
+        write_byte(getSP(),(getPC()+3)>>8);
+        changeSP(-1);
+        write_byte(SP, (getPC()+3)&0xFF);
+        changeSP(-1);
+        setPC(read_word(getPC()+1));
+        cycles+=6;
+    }
+    else
+    {
+        incPC(3);
+        cycles+=3;
+    }
+}
+
 void Ret() //Return
 {
     uint8_t lo = read_byte(getSP());
@@ -190,6 +254,42 @@ void ret_nz() //Return if the Z flag is 0
 void ret_nc() //Return if the C flag is 0
 {
     if (!Fc())
+    {
+        uint8_t lo = read_byte(getSP());
+        changeSP(1);
+        uint8_t hi = read_byte(getSP());
+        changeSP(1);
+        setPC((hi << 8) | lo);
+        cycles += 5;
+    }
+    else
+    {
+        incPC(1);
+        cycles+=2;
+    }
+}
+
+void ret_z() //Return if the Z flag is 1
+{
+    if (Z())
+    {
+        uint8_t lo = read_byte(getSP());
+        changeSP(1);
+        uint8_t hi = read_byte(getSP());
+        changeSP(1);
+        setPC((hi << 8) | lo);
+        cycles += 5;
+    }
+    else
+    {
+        incPC(1);
+        cycles+=2;
+    }
+}
+
+void ret_c() //Return if the C flag is 1
+{
+    if (Fc())
     {
         uint8_t lo = read_byte(getSP());
         changeSP(1);
@@ -351,6 +451,20 @@ void LDHL_d8() //Load 8-bit immediate into location shown by HL
     write_byte(read_byte(getPC()+1), readReg(H));
     incPC(2);
     cycles += 3;
+}
+
+void LDa8A() //Stores register A into the 8-bit immediate address
+{ //Kind of interesting factoid. You may be wondering why we are using 8 bit immediate, not 16
+    write_byte(getPC()+1+0xFF00, reg_ret(A)); //Well, as you can see here, the beginning for this address is always 0xFF
+    incPC(2); //Neat!
+    cycles+=3;
+}
+
+void LDCA() //Stores A into the register pointed to by C
+{ //This is one of my favorite things about emulation. Like why C? Who knows
+    write_byte(reg_ret(C)+0xFF00, reg_ret(A)); //But it's fun to think about why the developers did that
+    incPC(1); //Also, as above the address always starts w/ 0xFF
+    cycles += 2; //The reason for that I do know. It just has to do with the way memory is mapped
 }
 
 //MATH
@@ -794,7 +908,7 @@ void SUBAd8() //Subs 8 bit immediate to A
     cycles += 2;
 }
 
-void ANDAd8() //Add 8 bit immediate to A
+void ANDAd8() //Ands 8 bit immediate to A
 {
     uint8_t a = reg_ret(A); //Just trying to minimize function calls here
     uint8_t value = read_byte(getPC()+1);
@@ -811,7 +925,7 @@ void ANDAd8() //Add 8 bit immediate to A
     cycles += 2;
 }
 
-void ORAd8() //Add 8 bit immediate to A
+void ORAd8() //Ors 8 bit immediate to A
 {
     uint8_t a = reg_ret(A); //Just trying to minimize function calls here
     uint8_t value = read_byte(getPC()+1);
@@ -823,6 +937,71 @@ void ORAd8() //Add 8 bit immediate to A
     zeroN();
 
     writeSmallReg(A, result);
+
+    incPC(2);
+    cycles += 2;
+}
+
+void ADCAd8() //Add 8 bit immediate with carry to A
+{
+    uint8_t a = reg_ret(A); //There's an argument to be had over wether I should use opcode decoding like other places
+    uint8_t value = read_byte(getPC()+1); //for this set of math with A and the 8 bit immediate
+    uint16_t result = a + value +Fc(); //but I feel like it'd get real ugly without too much benefit
+
+    ((a & 0xF) + (value & 0xF) + Fc()> 0xF) ? setH() : zeroH(); //just a ton of switch statments for practically the same
+    (result > 0xFF) ? setC() : zeroC(); //thing written out as functions like I have here
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result&0xFF);
+    incPC(2);
+    cycles+=2;
+}
+
+void SBCAd8() //Subs 8 bit immediate to A w/ carry
+{
+    uint8_t a = reg_ret(A);
+    uint8_t value = read_byte(getPC()+1);
+    uint16_t result = a - value - Fc();
+
+    ((a & 0xF) < ((value & 0xF) + Fc()))) ? setH() : zeroH();
+    (a < (value + Fc())) ? setC() : zeroC();
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    setN();
+
+    writeSmallReg(A, result & 0xFF);
+
+    incPC(2);
+    cycles += 2;
+}
+
+void XORAd8() //Ors 8 bit immediate to A
+{
+    uint8_t a = reg_ret(A);
+    uint8_t value = read_byte(getPC()+1);
+    uint8_t result = a ^ value;
+
+    zeroH();
+    zeroC();
+    ((result) == 0) ? setZ() : zeroZ();
+    zeroN();
+
+    writeSmallReg(A, result);
+
+    incPC(2);
+    cycles += 2;
+}
+
+void SUBAd8() //Just in case you forgot, this subs, but doesn't affect A. Just flags
+{
+    uint8_t a = reg_ret(A); //or is it effect?
+    uint8_t value = read_byte(getPC()+1);//I can never remember
+    uint16_t result = a - value;//My english professor mom and Marshall Eriksen probably hate me
+
+    ((a & 0xF) < ((value & 0xF)))) ? setH() : zeroH();
+    (a < (value)) ? setC() : zeroC();
+    ((result & 0xFF) == 0) ? setZ() : zeroZ();
+    setN();
 
     incPC(2);
     cycles += 2;
