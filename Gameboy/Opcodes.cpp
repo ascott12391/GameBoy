@@ -76,7 +76,7 @@ void JPNCa16() //Jump to 16 bit immediate if C flag is 0
     }
 }
 
-void JPNZa16() //Jump to 16 bit immediate if Z flag is 1
+void JPZa16() //Jump to 16 bit immediate if Z flag is 1
 {
     if (Z())
     {
@@ -90,7 +90,7 @@ void JPNZa16() //Jump to 16 bit immediate if Z flag is 1
     }
 }
 
-void JPNCa16() //Jump to 16 bit immediate if C flag is 1
+void JPCa16() //Jump to 16 bit immediate if C flag is 1
 {
     if (Fc())
     {
@@ -322,6 +322,12 @@ void RST(uint8_t opcode) //This one looks weird (at least it does to me), basica
     cycles += 4;
 }
 
+void JPHL() //Jump to the address in HL. Pretty easy
+{
+    setPC(readReg(H));
+    cycles++;
+}
+
 
 //LOADS
 void LD_rr(uint8_t opcode) //Load something into something else
@@ -367,9 +373,9 @@ void LD_d8(uint8_t opcode) //Load immediate 8-bit operand into w/e
     incPC(2);
 }
 
-void LDAa16() //Load the contents specificed by the immediate 16 bit reg into A
+void LDAa16() //Load the contents of the address specificed by the immediate 16 bit reg into A
 {
-    writeSmallReg(A, read_word(getPC()+1));
+    writeSmallReg(A, read_byte(read_word(getPC()+1)));
     incPC(3);
     cycles += 4;
 }
@@ -413,15 +419,15 @@ void LD_rrA(uint8_t opcode) //Load A into address specified by register
     int src = (opcode >> 4)&0xF;
     switch(src){
         case 2: //Special case for HL. It's a little weird
-            write_byte(readReg(H), reg_ret(A));
+            write_byte(read_byte(readReg(H)), reg_ret(A));
             writeReg(H, readReg(H)+1);
             break;
         case 3:
-            write_byte(readReg(H), reg_ret(A));
+            write_byte(read_byte(readReg(H)), reg_ret(A));
             writeReg(H, readReg(H)-1);
             break;
         default:
-            write_byte(readReg(src), reg_ret(A)); //Needs to be updated for ENUMS [fixed]
+            write_byte(read_byte(readReg(src)), reg_ret(A)); //Needs to be updated for ENUMS [fixed]
     }
     incPC(1);
     cycles+=2;
@@ -432,15 +438,15 @@ void LD_Arr(uint8_t opcode) //Opposite of above, write into A
     int src = (opcode >> 4)&0xF;
     switch(src){
         case 2: //Special case for HL. It's a little weird
-            writeSmallReg(A, readReg(H));
+            writeSmallReg(A, read_byte(readReg(H)));
             writeReg(H, readReg(H)+1);
             break;
         case 3:
-            writeSmallReg(A, readReg(H));
+            writeSmallReg(A, read_byte(readReg(H)));
             writeReg(H, readReg(H)-1);
             break;
         default:
-            writeSmallReg(A, readReg(src));
+            writeSmallReg(A, read_byte(readReg(src)));
     }
     incPC(1);
     cycles+=2;
@@ -448,7 +454,7 @@ void LD_Arr(uint8_t opcode) //Opposite of above, write into A
 
 void LDHL_d8() //Load 8-bit immediate into location shown by HL
 {
-    write_byte(read_byte(getPC()+1), readReg(H));
+    write_byte(readReg(H), read_byte(getPC()+1));
     incPC(2);
     cycles += 3;
 }
@@ -523,7 +529,7 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
     else if (dest == 7) //This one is actually A, not F. Exact same as below, but different encoding on the opcode
     {
         data = reg_ret(A);
-        if ((data &0xF)== 0xFF) {setH();}
+        if ((data &0xF)+1 > 0xFF) {setH();}
         else {zeroH();}
         data++;
         writeSmallReg(A, data);
@@ -532,7 +538,7 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
     else
     {
         data = reg_ret(dest);
-        if ((data &0xF)== 0xFF) {setH();}
+        if ((data &0xF)+1 > 0xFF) {setH();}
         else {zeroH();}
         data++;
         writeSmallReg(dest, data);
@@ -638,7 +644,7 @@ void sub_rr(uint8_t opcode) //Subs regs, store in A
 
     uint16_t result = a - value - carry;
 
-    ((a & 0xF) < ((value & 0xF) + carry))) ? setH() : zeroH();
+    ((a & 0xF) < ((value & 0xF) + carry)) ? setH() : zeroH();
     (a < (value + carry)) ? setC() : zeroC();
     ((result & 0xFF) == 0) ? setZ() : zeroZ();
     setN();
@@ -672,7 +678,7 @@ void compares_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A 
 
     uint16_t result = a - value - carry;
 
-    ((a & 0xF) < ((value & 0xF) + carry))) ? setH() : zeroH();
+    ((a & 0xF) < ((value & 0xF) + carry)) ? setH() : zeroH();
     (a < (value + carry)) ? setC() : zeroC();
     ((result & 0xFF) == 0) ? setZ() : zeroZ();
     setN();
@@ -861,7 +867,7 @@ void INCHL() //Increase the contents of memory specified by HL
     write_byte(readReg(H), read_byte(readReg(H))+1);
     zeroN();
     read_byte(readReg(H)) == 0?setZ():zeroZ();
-    incPC(3);
+    incPC(1);
     cycles+=3;
 }
 
@@ -871,7 +877,7 @@ void DECHL() //Increase the contents of memory specified by HL
     write_byte(readReg(H), read_byte(readReg(H))-1);
     setN();
     read_byte(readReg(H)) == 0?setZ():zeroZ();
-    incPC(3);
+    incPC(1);
     cycles+=3;
 }
 
@@ -897,7 +903,7 @@ void SUBAd8() //Subs 8 bit immediate to A
     uint8_t value = read_byte(getPC()+1);
     uint16_t result = a - value;
 
-    ((a & 0xF) < ((value & 0xF)))) ? setH() : zeroH();
+    ((a & 0xF) < ((value & 0xF))) ? setH() : zeroH();
     (a < (value)) ? setC() : zeroC();
     ((result & 0xFF) == 0) ? setZ() : zeroZ();
     setN();
@@ -964,7 +970,7 @@ void SBCAd8() //Subs 8 bit immediate to A w/ carry
     uint8_t value = read_byte(getPC()+1);
     uint16_t result = a - value - Fc();
 
-    ((a & 0xF) < ((value & 0xF) + Fc()))) ? setH() : zeroH();
+    ((a & 0xF) < ((value & 0xF) + Fc())) ? setH() : zeroH();
     (a < (value + Fc())) ? setC() : zeroC();
     ((result & 0xFF) == 0) ? setZ() : zeroZ();
     setN();
@@ -992,19 +998,31 @@ void XORAd8() //Ors 8 bit immediate to A
     cycles += 2;
 }
 
-void SUBAd8() //Just in case you forgot, this subs, but doesn't affect A. Just flags
+void CPAd8() //Just in case you forgot, this subs, but doesn't affect A. Just flags
 {
     uint8_t a = reg_ret(A); //or is it effect?
     uint8_t value = read_byte(getPC()+1);//I can never remember
     uint16_t result = a - value;//My english professor mom and Marshall Eriksen probably hate me
 
-    ((a & 0xF) < ((value & 0xF)))) ? setH() : zeroH();
+    ((a & 0xF) < ((value & 0xF))) ? setH() : zeroH();
     (a < (value)) ? setC() : zeroC();
     ((result & 0xFF) == 0) ? setZ() : zeroZ();
     setN();
 
     incPC(2);
     cycles += 2;
+}
+
+void ADDSPs8() // Adds the SIGNED 8-bit immediate to SP
+{
+    int8_t imm = (int8_t)read_byte(getPC()+1);
+    (getSP()&0xF) + (imm & 0xF) > 0xF?setH():zeroH();
+    (getSP()&0xFF) + (imm & 0xFF) > 0xFF?setF():zeroF();
+    zeroZ();
+    zeroN();
+    changeSP(imm);
+    incPC(2);
+    cycles+=4;
 }
 
 //STACK
@@ -1084,6 +1102,26 @@ void LD_a16SP() //Load stack pointer into 16-bit address given by next 2 bytes
     write_byte(addr+1, SP >> 8);
     incPC(3);
     cycles+=5;
+}
+
+void LDHLSP_d8() //adds the SIGNED immediate to SP and stores in HL
+{
+    int8_t imm = (int8_t)read_byte(getPC()+1);
+    uint16_t h = getSP();
+    (h&0xF) + (imm & 0xF) > 0xF?setH():zeroH();
+    (h&0xFF) + (imm & 0xFF) > 0xFF?setF():zeroF();
+    zeroZ();
+    zeroN();
+    writeReg(H, h+imm);
+    incPC(2);
+    cycles+=3;
+}
+
+void LDSPHL() //Load HL into SP
+{
+    setSP(readReg(H));
+    incPC(1);
+    cycles+=2;
 }
 
 //Rotates

@@ -14,6 +14,7 @@ uint16_t SP = 0xFFFE;
 void incPC(uint16_t count) {pc += count;}
 void setPC(uint16_t location) {pc = location;}
 void changeSP(int amount) {SP+=amount;}
+void setSP(uint16_t location) {SP = location;} //Pretty sure this is only needed for a single opcode (0xF9), but the word 'needed' is in there
 bool Z() { return AF.lo & 0x80; }
 bool N() { return AF.lo & 0x40; }
 bool Hc() { return AF.lo & 0x20; }
