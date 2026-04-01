@@ -40,6 +40,75 @@ void CCF() //Flip carry flag. Another easy one
     cycles++;
 }
 
+void bit(uint8_t opcode) //Writes the compliment of some bit into the zero flag
+{
+    uint8_t reg = opcode & 0x7;
+    uint8_t bit = (opcode >> 3) & 0x7;
+    bool isHL = (reg == 6);
+    if (reg == 7){reg = 6;}
+    uint16_t addr;
+    uint8_t data;
+    if (isHL)
+    {
+        addr = readReg(H);
+        data = read_byte(addr);
+        cycles++;
+    }
+    else{data = regRet(reg);}
+    (data&(1<<bit))==0?setZ():zeroZ();
+    zeroN();
+    setH();
+    cycles+=2;
+    incPC(2);
+}
+
+void set(uint8_t opcode) //Sets a bit
+{
+    uint8_t reg = opcode & 0x7;
+    uint8_t bit = (opcode >> 3) & 0x7;
+    bool isHL = (reg == 6);
+    if (reg == 7){reg = 6;}
+    uint16_t addr;
+    uint8_t data;
+    if (isHL)
+    {
+        addr = readReg(H);
+        data = read_byte(addr);
+        cycles++;
+    }
+    else{data = regRet(reg);}
+    data = data | (1<<bit);
+    if (isHL) {write_byte(addr, data);}
+    else {writeReg(reg, data);}
+    zeroN();
+    setH();
+    cycles+=2;
+    incPC(2);
+}
+
+void res(uint8_t opcode) //Zeros a bit
+{
+    uint8_t reg = opcode & 0x7;
+    uint8_t bit = (opcode >> 3) & 0x7;
+    bool isHL = (reg == 6);
+    if (reg == 7){reg = 6;}
+    uint16_t addr;
+    uint8_t data;
+    if (isHL)
+    {
+        addr = readReg(H);
+        data = read_byte(addr);
+        cycles++;
+    }
+    else{data = regRet(reg);}
+    data = data & ~(1<<bit);
+    if (isHL) {write_byte(addr, data);}
+    else {writeReg(reg, data);}
+    zeroN();
+    setH();
+    cycles+=2;
+    incPC(2);
+}
 
 //JUMPS
 void JPNN() //Jump to 16 bit immediate
@@ -114,16 +183,16 @@ void JRs8() //Jump some steps ahead in the PC
 void JRNZs8() //Jump some steps ahead if zero flag is 0
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
-    if (Z()) {incPC(2); cycles+=3;}
-    else {   setPC(getPC()+2+offset); cycles+=2;}
+    if (Z()) {incPC(2); cycles+=2;}
+    else {   setPC(getPC()+2+offset); cycles+=3;}
     
 }
 
 void JRNCs8() //Jump some steps ahead if carry flag is 0
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
-    if (Fc()) {incPC(2); cycles+=3;}
-    else {   setPC(getPC()+2+offset); cycles+=2;}
+    if (Fc()) {incPC(2); cycles+=2;}
+    else {   setPC(getPC()+2+offset); cycles+=3;}
     
 }
 
@@ -143,10 +212,11 @@ void JRCs8() //Jump some steps ahead if carry flag is 1
 
 void Calla16() //Jump with return to the immediate 16 bit address
 {
-    write_byte(getSP(),(getPC()+3)>>8);
+    uint16_t ret = getPC() + 3;
     changeSP(-1);
-    write_byte(SP, (getPC()+3)&0xFF);
+    write_byte(getSP(), (ret >> 8) & 0xFF);
     changeSP(-1);
+    write_byte(getSP(), ret & 0xFF);
     setPC(read_word(getPC()+1));
     cycles+=6;
 }
@@ -155,10 +225,11 @@ void CALLNZa16() //You should get the idea by now, do the thing if the thing is 
 {
     if (!Z())
     {
-        write_byte(getSP(),(getPC()+3)>>8);
+        uint16_t ret = getPC() + 3;
         changeSP(-1);
-        write_byte(SP, (getPC()+3)&0xFF);
+        write_byte(getSP(), (ret >> 8) & 0xFF);
         changeSP(-1);
+        write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
     }
@@ -173,10 +244,11 @@ void CALLNCa16() //You should get the idea by now, do the thing if the thing is 
 {
     if (!Fc())
     {
-        write_byte(getSP(),(getPC()+3)>>8);
+        uint16_t ret = getPC() + 3;
         changeSP(-1);
-        write_byte(SP, (getPC()+3)&0xFF);
+        write_byte(getSP(), (ret >> 8) & 0xFF);
         changeSP(-1);
+        write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
     }
@@ -191,10 +263,11 @@ void CALLZa16() //You should get the idea by now, do the thing if the thing is o
 {
     if (Z())
     {
-        write_byte(getSP(),(getPC()+3)>>8);
+        uint16_t ret = getPC() + 3;
         changeSP(-1);
-        write_byte(SP, (getPC()+3)&0xFF);
+        write_byte(getSP(), (ret >> 8) & 0xFF);
         changeSP(-1);
+        write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
     }
@@ -209,10 +282,11 @@ void CALLCa16() //You should get the idea by now, do the thing if the thing is o
 {
     if (Fc())
     {
-        write_byte(getSP(),(getPC()+3)>>8);
+        uint16_t ret = getPC() + 3;
         changeSP(-1);
-        write_byte(SP, (getPC()+3)&0xFF);
+        write_byte(getSP(), (ret >> 8) & 0xFF);
         changeSP(-1);
+        write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
     }
@@ -312,10 +386,10 @@ void RST(uint8_t opcode) //This one looks weird (at least it does to me), basica
     uint16_t pc = getPC() + 1;
 
     changeSP(-1);
-    write_byte(getSP(), (pc >> 8) & 0xFF);
+    write_byte(getSP(), pc & 0xFF);
 
     changeSP(-1);
-    write_byte(getSP(), pc & 0xFF);
+    write_byte(getSP(), (pc >> 8) & 0xFF);
 
     setPC(addr);
 
@@ -331,7 +405,7 @@ void JPHL() //Jump to the address in HL. Pretty easy
 
 //LOADS
 void LD_rr(uint8_t opcode) //Load something into something else
-{//This will actually write to F not A. I am way too braindead to fix now [asdf]
+{//This will actually write to F not A. I am way too braindead to fix now [fixed]
     int src = opcode&7; //Last three bits determine where load is coming from
     int dest = (opcode >> 3)&7; //Next three determine source
     if (src == 6) //This and the next one are cases for loading something into the address POINTED to by HL
@@ -346,6 +420,8 @@ void LD_rr(uint8_t opcode) //Load something into something else
     }
     else
     {
+        if (dest == 7){dest = 6;}
+        if (src == 7){src = 6;}
         writeSmallReg(dest, reg_ret(src)); //Don't ask me why load B into B or whatever is a thing though (it is)
         cycles++;
     }
@@ -437,7 +513,7 @@ void LD_Arr(uint8_t opcode) //Opposite of above, write into A
 {
     int src = (opcode >> 4)&0xF;
     switch(src){
-        case 2: //Special case for HL. It's a little weird
+        case 2: //Special case for thing pointed to by HL. It's a little weird
             writeSmallReg(A, read_byte(readReg(H)));
             writeReg(H, readReg(H)+1);
             break;
@@ -529,7 +605,7 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
     else if (dest == 7) //This one is actually A, not F. Exact same as below, but different encoding on the opcode
     {
         data = reg_ret(A);
-        if ((data &0xF)+1 > 0xFF) {setH();}
+        if ((data &0xF)+1 > 0xF) {setH();}
         else {zeroH();}
         data++;
         writeSmallReg(A, data);
@@ -538,7 +614,7 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
     else
     {
         data = reg_ret(dest);
-        if ((data &0xF)+1 > 0xFF) {setH();}
+        if ((data &0xF)+1 > 0xF) {setH();}
         else {zeroH();}
         data++;
         writeSmallReg(dest, data);
@@ -826,7 +902,7 @@ void add_HLrr(uint8_t opcode) //Add some register pair into HL
             break;
         default:
             result = readReg(dest) + readReg(2);
-            (readReg(2)&0x0FFF)+(readReg(dest)&0x0FFF)>0xFFFF?setH():zeroH();
+            (readReg(2)&0x0FFF)+(readReg(dest)&0x0FFF)>0x0FFF?setH():zeroH();
     }
     result>0xFFFF?setC():zeroC();
     zeroN();
@@ -1016,8 +1092,11 @@ void CPAd8() //Just in case you forgot, this subs, but doesn't affect A. Just fl
 void ADDSPs8() // Adds the SIGNED 8-bit immediate to SP
 {
     int8_t imm = (int8_t)read_byte(getPC()+1);
-    (getSP()&0xF) + (imm & 0xF) > 0xF?setH():zeroH();
-    (getSP()&0xFF) + (imm & 0xFF) > 0xFF?setF():zeroF();
+    uint16_t sp = getSP();
+    uint16_t result = sp + imm;
+
+    ((sp ^ imm ^ result) & 0x10) ? setH() : zeroH();
+    ((sp ^ imm ^ result) & 0x100) ? setC() : zeroC();
     zeroZ();
     zeroN();
     changeSP(imm);
@@ -1031,27 +1110,27 @@ void pushrr(uint8_t opcode) //Push 16-bit reg onto stack
 {
     switch((opcode>>3)&0x7){ //Src is encoded in opcode, goes up by 2s
         case 0:
-            write_byte(getSP(), reg_ret(B)); //Also little-endian drives me insane sometimes, just thought I'd mention this after many, many mistakes
+            write_byte(getSP(), reg_ret(C)); //Also little-endian drives me insane sometimes, just thought I'd mention this after many, many mistakes
             changeSP(-1);
-            write_byte(getSP(), reg_ret(C));
+            write_byte(getSP(), reg_ret(B));
             changeSP(-1);
             break;
         case 2:
-            write_byte(getSP(), reg_ret(D));
-            changeSP(-1);
             write_byte(getSP(), reg_ret(E));
+            changeSP(-1);
+            write_byte(getSP(), reg_ret(D));
             changeSP(-1);
             break;
         case 4:
-            write_byte(getSP(), reg_ret(H));
-            changeSP(-1);
             write_byte(getSP(), reg_ret(L));
+            changeSP(-1);
+            write_byte(getSP(), reg_ret(H));
             changeSP(-1);
             break;
         case 6:
-            write_byte(getSP(), reg_ret(A));
-            changeSP(-1);
             write_byte(getSP(), reg_ret(F));
+            changeSP(-1);
+            write_byte(getSP(), reg_ret(A));
             changeSP(-1);
             break;
         default:
@@ -1083,7 +1162,7 @@ void poprr(uint8_t opcode) //See above, but pop
             changeSP(1);
             break;
         case 6:
-            writeSmallReg(F,read_byte(getSP())); //Pretty sure that lower 4 bits of F always need to be zero
+            writeSmallReg(F,read_byte(getSP())&0xF0); //Lower 4 bits of F always need to be zero
             changeSP(1); //And I'm not sure why you would want to directly store in a flag register
             writeSmallReg(A,read_byte(getSP())); //Seems like a way to break something
             changeSP(1); //Oh well, not really my problem
@@ -1107,9 +1186,10 @@ void LD_a16SP() //Load stack pointer into 16-bit address given by next 2 bytes
 void LDHLSP_d8() //adds the SIGNED immediate to SP and stores in HL
 {
     int8_t imm = (int8_t)read_byte(getPC()+1);
-    uint16_t h = getSP();
-    (h&0xF) + (imm & 0xF) > 0xF?setH():zeroH();
-    (h&0xFF) + (imm & 0xFF) > 0xFF?setF():zeroF();
+    uint16_t sp = getSP();
+    uint16_t result = sp + imm;
+    ((sp ^ imm ^ result) & 0x10) ? setH() : zeroH();
+    ((sp ^ imm ^ result) & 0x100) ? setC() : zeroC();
     zeroZ();
     zeroN();
     writeReg(H, h+imm);
@@ -1167,3 +1247,114 @@ void RRA() //Take it right now ya'll...
     incPC(1);
     cycles++;
 }
+
+void rotate(uint8_t opcode) //Rotates or shifts regs. This is the most complicated CB opcode.
+{
+    uint8_t op = (opcode >> 3) & 0x7;
+    uint8_t reg = opcode & 0x7;
+
+    uint8_t data;
+    uint16_t addr;
+    bool isHL = (reg == 6);
+
+    if (isHL) {
+        addr = readReg(H);
+        data = read_byte(addr);
+        cycles += 2;
+    } else {
+        data = regRet(reg);
+    }
+    if (reg == 7){reg = 6;} //Enums kinda make this weird as A is usually 6 but sometimes 7, and I'm just un-weirding it here
+    uint8_t result;
+    bool carryOut;
+
+    switch (op) {
+        case 0: //Rotate left w/ carry
+            carryOut = (data & 0x80) != 0;
+            result = (data << 1) | (data >> 7);
+            break;
+
+        case 1: //Rotate right w/ carry
+            carryOut = (data & 0x01) != 0;
+            result = (data >> 1) | (data << 7);
+            break;
+
+        case 2: //Rotate left w/o carry
+            carryOut = (data & 0x80) != 0;
+            result = (data << 1) | Fc();
+            break;
+
+        case 3: //Rotate right w/o carry
+            carryOut = (data & 0x01) != 0;
+            result = (data >> 1) | (Fc() << 7);
+            break;
+
+        case 4: //Shift left
+            carryOut = (data & 0x80) != 0;
+            result = data << 1;
+            break;
+
+        case 5: //Shift right, but maintain the 7th bit
+            carryOut = (data & 0x01) != 0;
+            result = (data >> 1) | (data & 0x80);
+            break;
+
+        case 6: //Swaps the nibbles
+            carryOut = 0;
+            result = (data << 4) | (data >> 4);
+            break;
+
+        case 7: //Shift right
+            carryOut = (data & 0x01) != 0;
+            result = data >> 1;
+            break;
+    }
+
+    if (isHL) {
+        write_byte(addr, result);
+    } else {
+        writeSmallReg(reg, result);
+    }
+
+    (result == 0) ? setZ() : zeroZ();
+    zeroN();
+    zeroH();
+    carryOut ? setC() : zeroC();
+
+    incPC(2);
+    cycles += 2;
+}
+
+
+
+
+/*
+
+                                               :
+                                              ::
+                                             ::
+                                             ::
+                                            ::
+                                            ::
+                              __           ::
+   _..-'/-¯¯--/_          ,.--. ''.     |`\=,..
+-:--.---''-..  /_         |\\_\..  \    `-.=._/
+.-|¯         '.  \         \_ \-`/\ |    ::`
+  /  @  \      \  -_   _..--|-\¯¯``'--.-/_\
+  |   .-'|      \  \\-'\_/     ¯/-.|-.\_\_/
+  \_./` /        \_//-''/    .-'
+       |           '-/'@====/              _.--.
+   __.'             /¯¯'-. \-'.          _/   /¯'
+.''____|   /       |'--\__\/-._        .'    |
+ \ \_. \  |       _| -/        \-.__  /     /
+  \___\ '/   _.  ('-..| /       '_  ''   _.'
+        /  .'     ¯¯¯¯ /        | ``'--''
+       (  / ¯```¯¯¯¯¯|-|        |
+        \ \_.         \ \      /
+         \___\         '.'.   /
+                         /    |
+                        /   .'
+                       /  .' |
+                     .'  / \  \
+                    /___| /___'
+*/

@@ -13,7 +13,7 @@
 #include "CPU.hpp"
 #include "MMU.hpp"
 
-//LAST ONE DONE WAS 0xFF NEED TO ALSO DO 0xD9, 0xFB, and 0xF3!
+//LAST ONE DONE WAS ALL OF THEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED TO ALSO DO 0xD9, 0xFB, and 0xF3!
 
 extern int cycles; //Does nothing. Just here so shit don't break.
 void NOOP(); //0x00
@@ -88,4 +88,27 @@ void ADDSPs8(); ///0xE8
 void JPHL(); //0xE9
 void LDHLSP_d8(); //0xF8
 void LDSPHL(); //0xF9
+
+
+//0xCB Opcodes. These are very pattern based and simplistic, so while there are technically a few more, they are much easier to implement.
+void rotate(uint8_t opcode); //0xCB00-0xCB3F
+void bit (uint8_t opcode); //0xCB40-0xCB7F
+void res (uint8_t opcode); //0xCB80-0xCBBF
+void set (uint8_t opcode); //0xCBC0-0XCBFF
 #endif
+
+
+/*
+                                  ,'\
+    _.----.        ____         ,'  _\   ___    ___     ____
+_,-'       `.     |    |  /`.   \,-'    |   \  /   |   |    \  |`.
+\      __    \    '-.  | /   `.  ___    |    \/    |   '-.   \ |  |
+ \.    \ \   |  __  |  |/    ,','_  `.  |          | __  |    \|  |
+   \    \/   /,' _`.|      ,' / / / /   |          ,' _`.|     |  |
+    \     ,-'/  /   \    ,'   | \/ / ,`.|         /  /   \  |     |
+     \    \ |   \_/  |   `-.  \    `'  /|  |    ||   \_/  | |\    |
+      \    \ \      /       `-.`.___,-' |  |\  /| \      /  | |   |
+       \    \ `.__,'|  |`-._    `|      |__| \/ |  `.__,'|  | |   |
+        \_.-'       |__|    `-._ |              '-.|     '-.| |   |
+                                `'                            '-._|
+*/

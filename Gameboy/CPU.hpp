@@ -43,4 +43,6 @@ uint8_t& reg_ret(int r);
 uint16_t readReg(int r);
 void writeReg(int r, uint16_t data);
 void writeSmallReg(int r, uint8_t data);
+
+
 #endif /* CPU_hpp */

@@ -15,7 +15,7 @@ void incPC(uint16_t count) {pc += count;}
 void setPC(uint16_t location) {pc = location;}
 void changeSP(int amount) {SP+=amount;}
 void setSP(uint16_t location) {SP = location;} //Pretty sure this is only needed for a single opcode (0xF9), but the word 'needed' is in there
-bool Z() { return AF.lo & 0x80; }
+bool Z() { return AF.lo & 0x80; } //It was needed for more...
 bool N() { return AF.lo & 0x40; }
 bool Hc() { return AF.lo & 0x20; }
 bool Fc() { return AF.lo & 0x10; }
@@ -64,7 +64,7 @@ uint16_t readReg(int r) //Reads a full register. Come back to this w/ enums when
             hi = AF.hi;
             break;
         default:
-            throw std::runtime_error("Invalid register");
+            throw std::runtime_error("Invalid register"); //TBH, this means I probably did an oopsie in opcode decoding. If you see this, my bad.
     }
     fullReg = lo;
     fullReg = fullReg | (hi<<8);
