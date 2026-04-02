@@ -54,7 +54,7 @@ void bit(uint8_t opcode) //Writes the compliment of some bit into the zero flag
         data = read_byte(addr);
         cycles++;
     }
-    else{data = regRet(reg);}
+    else{data = reg_ret(reg);}
     (data&(1<<bit))==0?setZ():zeroZ();
     zeroN();
     setH();
@@ -68,7 +68,7 @@ void set(uint8_t opcode) //Sets a bit
     uint8_t bit = (opcode >> 3) & 0x7;
     bool isHL = (reg == 6);
     if (reg == 7){reg = 6;}
-    uint16_t addr;
+    uint16_t addr = 0x0;
     uint8_t data;
     if (isHL)
     {
@@ -76,7 +76,7 @@ void set(uint8_t opcode) //Sets a bit
         data = read_byte(addr);
         cycles++;
     }
-    else{data = regRet(reg);}
+    else{data = reg_ret(reg);}
     data = data | (1<<bit);
     if (isHL) {write_byte(addr, data);}
     else {writeReg(reg, data);}
@@ -92,7 +92,7 @@ void res(uint8_t opcode) //Zeros a bit
     uint8_t bit = (opcode >> 3) & 0x7;
     bool isHL = (reg == 6);
     if (reg == 7){reg = 6;}
-    uint16_t addr;
+    uint16_t addr = 0;
     uint8_t data;
     if (isHL)
     {
@@ -100,7 +100,7 @@ void res(uint8_t opcode) //Zeros a bit
         data = read_byte(addr);
         cycles++;
     }
-    else{data = regRet(reg);}
+    else{data = reg_ret(reg);}
     data = data & ~(1<<bit);
     if (isHL) {write_byte(addr, data);}
     else {writeReg(reg, data);}
@@ -544,7 +544,7 @@ void LDa8A() //Stores register A into the 8-bit immediate address
 
 void LDAa8() //Opposite of above
 {
-    writeSmallReg(read_byte(getPC()+1+0xFF00, A);
+    writeSmallReg(read_byte(getPC()+1+0xFF00), A);
     incPC(2);
     cycles+=3;
 }
@@ -738,7 +738,7 @@ void sub_rr(uint8_t opcode) //Subs regs, store in A
     cycles += 1;
 }
 
-void compares_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is affected
+void cp_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is affected
 {
     uint8_t a = reg_ret(A);
     uint8_t carry = (opcode & 0x08) ? Fc() : 0; //This checks if carry is needed. It is for 0x97-0x9F
@@ -1199,7 +1199,7 @@ void LDHLSP_d8() //adds the SIGNED immediate to SP and stores in HL
     ((sp ^ imm ^ result) & 0x100) ? setC() : zeroC();
     zeroZ();
     zeroN();
-    writeReg(H, h+imm);
+    writeReg(H, result);
     incPC(2);
     cycles+=3;
 }
@@ -1261,7 +1261,7 @@ void rotate(uint8_t opcode) //Rotates or shifts regs. This is the most complicat
     uint8_t reg = opcode & 0x7;
 
     uint8_t data;
-    uint16_t addr;
+    uint16_t addr = 0;
     bool isHL = (reg == 6);
 
     if (isHL) {
@@ -1269,11 +1269,11 @@ void rotate(uint8_t opcode) //Rotates or shifts regs. This is the most complicat
         data = read_byte(addr);
         cycles += 2;
     } else {
-        data = regRet(reg);
+        data = reg_ret(reg);
     }
     if (reg == 7){reg = 6;} //Enums kinda make this weird as A is usually 6 but sometimes 7, and I'm just un-weirding it here
-    uint8_t result;
-    bool carryOut;
+    uint8_t result = 0;
+    bool carryOut = false;
 
     switch (op) {
         case 0: //Rotate left w/ carry

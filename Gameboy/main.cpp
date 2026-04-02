@@ -9,14 +9,19 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 #include "Opcodes.hpp"
 typedef unsigned char BYTE;
 void logData(FILE* logger, uint8_t opcode);
 
-usin OpFunc = void(*)(uint8_t);
 
-int main(int argc, const char * argv[]) 
-    pc  = 0x0150;
+using OpFunc = void(*)(uint8_t);
+void init_table(std::array<OpFunc, 256>& opcode_table,
+                std::array<OpFunc, 256>& CBopcode_table);
+
+int main(int argc, const char * argv[])
+{
+    setPC(0x0150);
     FILE* logger = fopen("log.txt", "w");
     long size;
     std::ifstream game("cpu_instrs.gb", std::ios::binary| std::ios::in);
@@ -26,8 +31,8 @@ int main(int argc, const char * argv[])
     game.seekg(0, std::ios::beg);
     std::vector<BYTE> romData(size);
     game.read((char*) &romData[0], size);
-    OpFunc opcode_table[256];
-    OpFunc CBopcode_table[256];
+    std::array<OpFunc, 256> opcode_table;
+    std::array<OpFunc, 256> CBopcode_table;
     for (int i = 0; i < 0x7FFF; i++) //Very bad doesn't work w/ banking, fix later [asdf]
     {
         memory[i] = romData[i];
@@ -37,10 +42,10 @@ int main(int argc, const char * argv[])
     BYTE opcode;
     while (!halted) //This is ugly as hell, but I just wanna get this working rn, and Sbux closes in 30 mins. Come back to later [fixed]
     {
-        opcode = romData[pc];
+        opcode = romData[getPC()];
         logData(logger, opcode);
         if (opcode == 0xCB) {
-            opcode = romData[pc+1];
+            opcode = romData[getPC()+1];
             CBopcode_table[opcode](opcode);
         }
         else{opcode_table[opcode](opcode);}
@@ -50,7 +55,7 @@ int main(int argc, const char * argv[])
 
 void logData(FILE* logger, uint8_t opcode)
 {
-    fprintf(//logger,
+    fprintf(logger,
         "%04X %02X  "
         "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
         "SP:%04X  \n",
@@ -59,7 +64,8 @@ void logData(FILE* logger, uint8_t opcode)
     );
 }
 
-void init_table(OpFunc &opcode_table[], OpFunc &CBopcode_table[]) //Sets up pointers of functions for opcodes
+void init_table(std::array<OpFunc, 256>& opcode_table,
+                std::array<OpFunc, 256>& CBopcode_table) //Sets up pointers of functions for opcodes
 {
     opcode_table[0x00] = [](uint8_t){NOOP();};
     opcode_table[0x01] = LD_d16;
@@ -115,8 +121,8 @@ void init_table(OpFunc &opcode_table[], OpFunc &CBopcode_table[]) //Sets up poin
     opcode_table[0x1F] = [](uint8_t){RRA();};
     opcode_table[0x20] = [](uint8_t){JRNZs8();};
     opcode_table[0x27] = [](uint8_t){DAA();}; //This is so long...
-    opcode_table[0x28] = [](uint8_t){JRZs8();}
-    opcode_table[0x2F] = [](uint8_t){CPL();}
+    opcode_table[0x28] = [](uint8_t){JRZs8();};
+    opcode_table[0x2F] = [](uint8_t){CPL();};
     opcode_table[0x30] = [](uint8_t){JRNCs8();};
     opcode_table[0x34] = [](uint8_t){INCHL();};
     opcode_table[0x35] = [](uint8_t){DECHL();};
@@ -173,33 +179,33 @@ void init_table(OpFunc &opcode_table[], OpFunc &CBopcode_table[]) //Sets up poin
     opcode_table[0xDF] = RST;
     opcode_table[0xEF] = RST;
     opcode_table[0xFF] = RST;
-    opcode_table[0xC8] = [](uint8_t){ret_z();}
-    opcode_table[0xC9] = [](uint8_t){Ret();}
-    opcode_table[0xCA] = [](uint8_t){JPZa16();}
-    opcode_table[0xCC] = [](uint8_t){CALLZa16();}
-    opcode_table[0xCD] = [](uint8_t){Calla16();}
-    opcode_table[0xCE] = [](uint8_t){ADCAd8();}
-    opcode_table[0xD0] = [](uint8_t){ret_nc();}
-    opcode_table[0xD2] = [](uint8_t){JPNCa16();}
-    opcode_table[0xD4] = [](uint8_t){CALLNCa16();}
-    opcode_table[0xD6] = [](uint8_t){SUBAd8();}
-    opcode_table[0xD8] = [](uint8_t){ret_c();}
-    opcode_table[0xDA] = [](uint8_t){JPCa16();}
-    opcode_table[0xDC] = [](uint8_t){CALLCa16();}
-    opcode_table[0xDE] = [](uint8_t){SBCAd8();}
-    opcode_table[0xE0] = [](uint8_t){LDa8A();}
-    opcode_table[0xE2] = [](uint8_t){LDCA();}
-    opcode_table[0xE6] = [](uint8_t){ANDAd8();}
-    opcode_table[0xE8] = [](uint8_t){ADDSPs8();}
-    opcode_table[0xE9] = [](uint8_t){JPHL();}
-    opcode_table[0xEA] = [](uint8_t){LDa16A();}
-    opcode_table[0xEE] = [](uint8_t){XORAd8();}
-    opcode_table[0xF0] = [](uint8_t){LDAa8();}
-    opcode_table[0xF6] = [](uint8_t){ORAd8();}
-    opcode_table[0xF8] = [](uint8_t){LDHLSP_d8();}
-    opcode_table[0xF9] = [](uint8_t){LDSPHL();}
-    opcode_table[0xFA] = [](uint8_t){LDAa16();}
-    opcode_table[0xFE] = [](uint8_t){CPAd8();} //Now that that's done I got the easy part
+    opcode_table[0xC8] = [](uint8_t){ret_z();};
+    opcode_table[0xC9] = [](uint8_t){Ret();};
+    opcode_table[0xCA] = [](uint8_t){JPZa16();};
+    opcode_table[0xCC] = [](uint8_t){CALLZa16();};
+    opcode_table[0xCD] = [](uint8_t){Calla16();};
+    opcode_table[0xCE] = [](uint8_t){ADCAd8();};
+    opcode_table[0xD0] = [](uint8_t){ret_nc();};
+    opcode_table[0xD2] = [](uint8_t){JPNCa16();};
+    opcode_table[0xD4] = [](uint8_t){CALLNCa16();};
+    opcode_table[0xD6] = [](uint8_t){SUBAd8();};
+    opcode_table[0xD8] = [](uint8_t){ret_c();};
+    opcode_table[0xDA] = [](uint8_t){JPCa16();};
+    opcode_table[0xDC] = [](uint8_t){CALLCa16();};
+    opcode_table[0xDE] = [](uint8_t){SBCAd8();};
+    opcode_table[0xE0] = [](uint8_t){LDa8A();};
+    opcode_table[0xE2] = [](uint8_t){LDCA();};
+    opcode_table[0xE6] = [](uint8_t){ANDAd8();};
+    opcode_table[0xE8] = [](uint8_t){ADDSPs8();};
+    opcode_table[0xE9] = [](uint8_t){JPHL();};
+    opcode_table[0xEA] = [](uint8_t){LDa16A();};
+    opcode_table[0xEE] = [](uint8_t){XORAd8();};
+    opcode_table[0xF0] = [](uint8_t){LDAa8();};
+    opcode_table[0xF6] = [](uint8_t){ORAd8();};
+    opcode_table[0xF8] = [](uint8_t){LDHLSP_d8();};
+    opcode_table[0xF9] = [](uint8_t){LDSPHL();};
+    opcode_table[0xFA] = [](uint8_t){LDAa16();};
+    opcode_table[0xFE] = [](uint8_t){CPAd8();}; //Now that that's done I got the easy part
 
     for(int i = 0; i <= 0x3F; i++)
     {

@@ -25,6 +25,7 @@ void incPC(uint16_t cycles);
 void setPC(uint16_t location);
 uint16_t getPC();
 uint16_t getSP();
+void setSP(uint16_t location);
 void changeSP(int amount);
 int getTimer();
 bool Z(); //These check flags
