@@ -13,7 +13,7 @@
 #include "CPU.hpp"
 #include "MMU.hpp"
 
-//LAST ONE DONE WAS ALL OF THEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED TO ALSO DO 0xD9, 0xFB, and 0xF3!
+//LAST ONE DONE WAS ALL OF THEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED TO ALSO DO 0x10, 0xD9, 0xFB, and 0xF3!
 
 extern int cycles; //Does nothing. Just here so shit don't break.
 void NOOP(); //0x00
@@ -55,12 +55,12 @@ void LDHL_d8(); //0x36
 void SCF(); //0x37
 void JRCs8(); //0x38
 void CCF(); //0x3F
-void add_rr(); //0x80-0x8F
-void sub_rr(); //0x90-0x9F
-void and_rr(); //0xA0-0xA7
-void xor_rr(); //0xA8-0xAF
-void or_rr(); //0xB0-0xB7
-void cp_rr(); //0xB8-0xBF
+void add_rr(uint8_t opcode); //0x80-0x8F
+void sub_rr(uint8_t opcode); //0x90-0x9F
+void and_rr(uint8_t opcode); //0xA0-0xA7
+void xor_rr(uint8_t opcode); //0xA8-0xAF
+void or_rr(uint8_t opcode); //0xB0-0xB7
+void cp_rr(uint8_t opcode); //0xB8-0xBF
 void ret_nz(); //0xC0
 void ret_nc(); //0xD0
 void JPNZa16(); //0xC2
@@ -88,6 +88,7 @@ void ADDSPs8(); ///0xE8
 void JPHL(); //0xE9
 void LDHLSP_d8(); //0xF8
 void LDSPHL(); //0xF9
+void LDAa8(); //0xF0
 
 
 //0xCB Opcodes. These are very pattern based and simplistic, so while there are technically a few more, they are much easier to implement.

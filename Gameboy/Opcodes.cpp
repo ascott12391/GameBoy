@@ -542,6 +542,13 @@ void LDa8A() //Stores register A into the 8-bit immediate address
     cycles+=3;
 }
 
+void LDAa8() //Opposite of above
+{
+    writeSmallReg(read_byte(getPC()+1+0xFF00, A);
+    incPC(2);
+    cycles+=3;
+}
+
 void LDCA() //Stores A into the register pointed to by C
 { //This is one of my favorite things about emulation. Like why C? Who knows
     write_byte(reg_ret(C)+0xFF00, reg_ret(A)); //But it's fun to think about why the developers did that
