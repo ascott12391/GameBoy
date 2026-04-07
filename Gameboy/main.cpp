@@ -284,26 +284,3 @@ void handleInterrupts()
         }
     }
 }
-
-void doTimers()
-{
-    if(cycles%64==0){write_byte(0xFF04, read_byte(0xFF04)+1);}
-    uint8_t status = read_byte(0xFF07);
-    if((status&0x4)!=0x4){return;}
-    status = status & 0x3;
-    switch (status)
-    {
-        case 0:
-            if (cycles%256==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
-            break;
-        case 1:
-            if (cycles%4==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
-            break;
-        case 2:
-            if (cycles%16==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
-            break;
-        case 3:
-            if (cycles%64==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
-            break;
-    }
-}

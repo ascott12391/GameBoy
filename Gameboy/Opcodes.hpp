@@ -12,6 +12,7 @@
 #include <cstdint>
 #include "CPU.hpp"
 #include "MMU.hpp"
+#include "Timers.hpp"
 
 //LAST ONE DONE WAS ALL OF THEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED TO ALSO DO 0x10!
 
