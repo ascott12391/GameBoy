@@ -13,7 +13,7 @@
 #include "CPU.hpp"
 #include "MMU.hpp"
 
-//LAST ONE DONE WAS ALL OF THEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED TO ALSO DO 0x10, 0xD9, 0xFB, and 0xF3!
+//LAST ONE DONE WAS ALL OF THEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED TO ALSO DO 0x10!
 
 extern int cycles; //Does nothing. Just here so shit don't break.
 void NOOP(); //0x00
@@ -84,11 +84,14 @@ void XORAd8(); //0xEE
 void CPAd8(); //0xFE
 void LDa8A(); //0xE0
 void LDCA(); //0xE2
-void ADDSPs8(); ///0xE8
+void ADDSPs8(); //0xE8
 void JPHL(); //0xE9
 void LDHLSP_d8(); //0xF8
 void LDSPHL(); //0xF9
 void LDAa8(); //0xF0
+void EI(); //0xFB
+void DI(); //0xF3
+void RETI(); //0xD9
 
 
 //0xCB Opcodes. These are very pattern based and simplistic, so while there are technically a few more, they are much easier to implement.

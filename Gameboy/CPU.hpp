@@ -16,11 +16,13 @@ struct reg
     uint8_t hi;
     uint8_t lo;
 };
-extern reg AF, BC, DE, HL; //Yes, gloabals are bad. So sue me, trying to get this working at a baseline b4 Starbies closes. [asdf]
+extern reg AF, BC, DE, HL; //Trying to get this working at a baseline b4 Starbies closes.
 extern uint16_t pc;
 extern int timer;
+extern bool halted;
 enum Reg8 {B, C, D, E, H, L, A, F};
 extern uint16_t SP;
+extern bool IME;
 void incPC(uint16_t cycles);
 void setPC(uint16_t location);
 uint16_t getPC();
@@ -40,10 +42,12 @@ void zeroZ(); //Zero flags
 void zeroN();
 void zeroC();
 void zeroH();
+void setIME();
+void resIME();
 uint8_t& reg_ret(int r);
 uint16_t readReg(int r);
 void writeReg(int r, uint16_t data);
 void writeSmallReg(int r, uint8_t data);
 
-
 #endif /* CPU_hpp */
+

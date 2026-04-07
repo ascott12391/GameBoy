@@ -7,10 +7,13 @@
 
 #include "CPU.hpp"
 
-reg AF{0x01, 0x00}, BC{0xFF, 0x13}, DE{0x00, 0xC1}, HL{0x84, 0x03}; //Yes, gloabals are bad. So sue me, trying to get this working at a baseline b4 Starbies closes. [asdf]
-uint16_t pc = 0x0150; //Skip Boot ROM for now [asdf]
+reg AF{0x01, 0x00}, BC{0xFF, 0x13}, DE{0x00, 0xC1}, HL{0x84, 0x03}; //Trying to get this working at a baseline b4 Starbies closes
+uint16_t pc = 0x0100; //Skip Boot ROM for now [asdf]
 int timer = 0; //Probably wrong, fix later [asdf]
 uint16_t SP = 0xFFFE;
+bool IME = false;
+bool halted = false;
+
 void incPC(uint16_t count) {pc += count;}
 void setPC(uint16_t location) {pc = location;}
 void changeSP(int amount) {SP+=amount;}
@@ -21,12 +24,12 @@ bool Hc() { return AF.lo & 0x20; }
 bool Fc() { return AF.lo & 0x10; }
 void setZ() {AF.lo = AF.lo | 0x80; }
 void setN() {AF.lo = AF.lo | 0x40; }
-void setC() {AF.lo = AF.lo | 0x20; }
-void setH() {AF.lo = AF.lo | 0x10; }
+void setH() {AF.lo = AF.lo | 0x20; }
+void setC() {AF.lo = AF.lo | 0x10; }
 void zeroZ() {AF.lo = AF.lo & 0x70; }
 void zeroN() {AF.lo = AF.lo & 0xB0; }
-void zeroC() {AF.lo = AF.lo & 0xD0; }
-void zeroH() {AF.lo = AF.lo & 0xE0; }
+void zeroH() {AF.lo = AF.lo & 0xD0; }
+void zeroC() {AF.lo = AF.lo & 0xE0; }
 uint8_t& reg_ret(int r) {
     switch (r) {
         case 0: return BC.hi; // B
@@ -90,6 +93,9 @@ void writeReg(int r, uint16_t data)
             AF.lo = data&0xF0;
             AF.hi = (data>>8)&0xFF;
             break;
+        case 8:
+            SP = data;
+            break;
         default:
             throw std::runtime_error("Invalid register");
     }
@@ -107,11 +113,13 @@ void writeSmallReg(int r, uint8_t data)
         case 6: AF.hi = data; break; // A
         case 7: AF.lo = data; break; // F
         default:
+            r++;
             throw std::runtime_error("Invalid register");
     }
 }
 
 uint16_t getSP() {return SP;}
 uint16_t getPC() {return pc;}
+void setIME() {IME = true;}
+void resIME() {IME = false;}
 int getTimer () {return timer;}
-

@@ -19,12 +19,15 @@ using OpFunc = void(*)(uint8_t);
 void init_table(std::array<OpFunc, 256>& opcode_table,
                 std::array<OpFunc, 256>& CBopcode_table);
 
+void bootUp();
+void handelInterrupts();
+
 int main(int argc, const char * argv[])
 {
-    setPC(0x0150);
+    bootUp();
     FILE* logger = fopen("log.txt", "w");
     long size;
-    std::ifstream game("cpu_instrs.gb", std::ios::binary| std::ios::in);
+    std::ifstream game("./gb-test-roms-master/cpu_instrs/individual/02-interrupts.gb", std::ios::binary| std::ios::in);
     if (!game) {std::cout << "No ROM detected"; return 0;} //Update for error code here [asdf]
     game.seekg(0, std::ios::end);
     size = game.tellg();
@@ -33,7 +36,7 @@ int main(int argc, const char * argv[])
     game.read((char*) &romData[0], size);
     std::array<OpFunc, 256> opcode_table;
     std::array<OpFunc, 256> CBopcode_table;
-    for (int i = 0; i < 0x7FFF; i++) //Very bad doesn't work w/ banking, fix later [asdf]
+    for (int i = 0; i <= 0x7FFF; i++) //Very bad doesn't work w/ banking, fix later [asdf]
     {
         memory[i] = romData[i];
     }
@@ -42,10 +45,10 @@ int main(int argc, const char * argv[])
     BYTE opcode;
     while (!halted) //This is ugly as hell, but I just wanna get this working rn, and Sbux closes in 30 mins. Come back to later [fixed]
     {
-        opcode = romData[getPC()];
+        opcode = read_byte(getPC());
         logData(logger, opcode);
         if (opcode == 0xCB) {
-            opcode = romData[getPC()+1];
+            opcode = read_byte(getPC()+1);
             CBopcode_table[opcode](opcode);
         }
         else{opcode_table[opcode](opcode);}
@@ -56,12 +59,13 @@ int main(int argc, const char * argv[])
 void logData(FILE* logger, uint8_t opcode)
 {
     fprintf(logger,
-        "%04X %02X  "
         "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X "
-        "SP:%04X  \n",
-        pc, opcode,
-        AF.hi, AF.lo, BC.hi, BC.lo, DE.hi, DE.lo, HL.hi, HL.lo, SP //Fix later. See Sbux comments for context. [fixed]
+        "SP:%04X "
+        "PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
+        AF.hi, AF.lo, BC.hi, BC.lo, DE.hi, DE.lo, HL.hi, HL.lo, SP,
+            pc, read_byte(pc), read_byte(pc+1), read_byte(pc+2), read_byte(pc+3)//Fix later. See Sbux comments for context. [fixed]
     );
+    fflush(logger);
 }
 
 void init_table(std::array<OpFunc, 256>& opcode_table,
@@ -154,7 +158,7 @@ void init_table(std::array<OpFunc, 256>& opcode_table,
     {
         opcode_table[i] = or_rr;
     }
-    for (int i = 0xB0; i <= 0xB7; i++)
+    for (int i = 0xB8; i <= 0xBF; i++)
     {
         opcode_table[i] = cp_rr;
     }
@@ -205,6 +209,9 @@ void init_table(std::array<OpFunc, 256>& opcode_table,
     opcode_table[0xF8] = [](uint8_t){LDHLSP_d8();};
     opcode_table[0xF9] = [](uint8_t){LDSPHL();};
     opcode_table[0xFA] = [](uint8_t){LDAa16();};
+    opcode_table[0xFB] = [](uint8_t){EI();};
+    opcode_table[0xF3] = [](uint8_t){DI();};
+    opcode_table[0xD9] = [](uint8_t){RETI();};
     opcode_table[0xFE] = [](uint8_t){CPAd8();}; //Now that that's done I got the easy part
 
     for(int i = 0; i <= 0x3F; i++)
@@ -224,4 +231,79 @@ void init_table(std::array<OpFunc, 256>& opcode_table,
         CBopcode_table[i] = set;
     }
 
+}
+
+void bootUp() //Boot sequence
+{
+    writeReg(A, 0x01B0);
+    writeReg(B, 0x0013);
+    writeReg(D, 0x00D8);
+    writeReg(H, 0x014D);
+    setPC(0x0100);
+    setSP(0xFFFE);
+    resIME();
+    halted = false;
+}
+
+void handleInterrupts()
+{
+    halted = false; //Wake up CPU if halted. Even if not IME. This is the Halt Bug.
+    if(!IME){return;} //If interrupts are disabled, we don't interrupt
+    uint8_t IE = read_byte(0xFFFF); //This is a more minor version of IME for specific interrupts
+    uint8_t IF = read_byte(0xFF0F); //This calls interrupts
+    uint8_t interrupts = IE&IF;
+    if (interrupts == 0) {return;} //If the interrupt being called is disabled, no.    resIME(); //Turn it off every time
+    for (int i = 0; i < 5; i++) //Goes from right to left basically
+    {
+        if (interrupts & (1<<i))
+        {
+            write_byte(0xFF0F, IF&~(1<<i)); //Clear the bit
+            changeSP(-1); //Push PC onto stack
+            write_byte(getSP(), (getPC() >> 8) & 0xFF);
+            changeSP(-1);
+            write_byte(getSP(), getPC() & 0xFF);
+            switch(i) //Go to address specified by the interrupt
+            {
+                case 0:
+                    setPC(0x40);
+                    break;
+                case 1:
+                    setPC(0x48);
+                    break;
+                case 2:
+                    setPC(0x50);
+                    break;
+                case 3:
+                    setPC(0x58);
+                    break;
+                case 4:
+                    setPC(0x60);
+            }
+            cycles += 5;
+            return; //Only service one at a time
+        }
+    }
+}
+
+void doTimers()
+{
+    if(cycles%64==0){write_byte(0xFF04, read_byte(0xFF04)+1);}
+    uint8_t status = read_byte(0xFF07);
+    if((status&0x4)!=0x4){return;}
+    status = status & 0x3;
+    switch (status)
+    {
+        case 0:
+            if (cycles%256==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
+            break;
+        case 1:
+            if (cycles%4==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
+            break;
+        case 2:
+            if (cycles%16==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
+            break;
+        case 3:
+            if (cycles%64==0){write_byte(0xFF05, read_byte(0xFF05)+1);}
+            break;
+    }
 }

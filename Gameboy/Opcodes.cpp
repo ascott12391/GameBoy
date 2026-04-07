@@ -40,6 +40,20 @@ void CCF() //Flip carry flag. Another easy one
     cycles++;
 }
 
+void EI() //Enables interrupts.
+{
+    setIME();
+    incPC(1);
+    cycles++;
+}
+
+void DI() //Disables interrupts.
+{
+    resIME();
+    incPC(1);
+    cycles++;
+}
+
 void bit(uint8_t opcode) //Writes the compliment of some bit into the zero flag
 {
     uint8_t reg = opcode & 0x7;
@@ -307,6 +321,17 @@ void Ret() //Return
     cycles += 4;
 }
 
+void RETI() //Return but enable interrupts
+{
+    setIME();
+    uint8_t lo = read_byte(getSP());
+    changeSP(1);
+    uint8_t hi = read_byte(getSP());
+    changeSP(1);
+    setPC((hi << 8) | lo);
+    cycles += 4;
+}
+
 void ret_nz() //Return if the Z flag is 0
 {
     if (!Z())
@@ -410,11 +435,13 @@ void LD_rr(uint8_t opcode) //Load something into something else
     int dest = (opcode >> 3)&7; //Next three determine source
     if (src == 6) //This and the next one are cases for loading something into the address POINTED to by HL
     {
+        if (dest == 7){dest = 6;}
         writeSmallReg(dest, read_byte(readReg(H)));
         cycles += 2;
     }
     else if (dest == 6) //I know what you may be wondering. "But Alex, what if you have an opcode that reads HL into HL?"
     {
+        if (src == 7){src = 6;}
         write_byte(readReg(H), reg_ret(src)); //We don't. Instead we have the HALT command there.
         cycles += 2;
     }
@@ -478,10 +505,7 @@ void LD_d16(uint8_t opcode) //Load 16 bit immediate into shit
             writeReg(H, val);
             break;
         case 3: //Stack Pointer
-            write_byte(SP, val >> 8);
-            changeSP(-1);
-            write_byte(SP, val & 0xFF);
-            changeSP(-1);
+            writeReg(8, val);
             break;
         default:
             throw std::runtime_error("Invalid register");
@@ -495,15 +519,19 @@ void LD_rrA(uint8_t opcode) //Load A into address specified by register
     int src = (opcode >> 4)&0xF;
     switch(src){
         case 2: //Special case for HL. It's a little weird
-            write_byte(read_byte(readReg(H)), reg_ret(A));
+            write_byte(readReg(H), reg_ret(A));
             writeReg(H, readReg(H)+1);
             break;
         case 3:
-            write_byte(read_byte(readReg(H)), reg_ret(A));
+            write_byte(readReg(H), reg_ret(A));
             writeReg(H, readReg(H)-1);
             break;
-        default:
-            write_byte(read_byte(readReg(src)), reg_ret(A)); //Needs to be updated for ENUMS [fixed]
+        case 1:
+            write_byte(readReg(D), reg_ret(A));
+            break;
+        case 0:
+            write_byte(readReg(B), reg_ret(A));
+            break;
     }
     incPC(1);
     cycles+=2;
@@ -521,8 +549,13 @@ void LD_Arr(uint8_t opcode) //Opposite of above, write into A
             writeSmallReg(A, read_byte(readReg(H)));
             writeReg(H, readReg(H)-1);
             break;
-        default:
-            writeSmallReg(A, read_byte(readReg(src)));
+        case 1:
+            writeSmallReg(A, read_byte(readReg(D)));
+            break;
+        case 0:
+            writeSmallReg(A, read_byte(readReg(B)));
+            break;
+            
     }
     incPC(1);
     cycles+=2;
@@ -537,14 +570,16 @@ void LDHL_d8() //Load 8-bit immediate into location shown by HL
 
 void LDa8A() //Stores register A into the 8-bit immediate address
 { //Kind of interesting factoid. You may be wondering why we are using 8 bit immediate, not 16
-    write_byte(getPC()+1+0xFF00, reg_ret(A)); //Well, as you can see here, the beginning for this address is always 0xFF
+    uint8_t offset = read_byte(getPC() + 1);
+    write_byte(0xFF00 + offset, reg_ret(A)); //Well, as you can see here, the beginning for this address is always 0xFF
     incPC(2); //Neat!
     cycles+=3;
 }
 
 void LDAa8() //Opposite of above
 {
-    writeSmallReg(read_byte(getPC()+1+0xFF00), A);
+    uint8_t offset = read_byte(getPC() + 1);
+    writeSmallReg(A, read_byte(0xFF00 + offset));
     incPC(2);
     cycles+=3;
 }
@@ -741,7 +776,6 @@ void sub_rr(uint8_t opcode) //Subs regs, store in A
 void cp_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is affected
 {
     uint8_t a = reg_ret(A);
-    uint8_t carry = (opcode & 0x08) ? Fc() : 0; //This checks if carry is needed. It is for 0x97-0x9F
     uint8_t value;
     int dest = opcode & 0x07;
 
@@ -752,17 +786,17 @@ void cp_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is aff
     }
     else if(dest == 7)
     {
-        value = a; //This is when we sub A to A. Mostly zero, but gets weird when carry gets involved
+        value = a; //This is when we sub A to A. Always 0
     }
     else
     {
         value = reg_ret(dest);
     }
 
-    uint16_t result = a - value - carry;
+    uint16_t result = a - value;
 
-    ((a & 0xF) < ((value & 0xF) + carry)) ? setH() : zeroH();
-    (a < (value + carry)) ? setC() : zeroC();
+    ((a & 0xF) < (value & 0xF)) ? setH() : zeroH();
+    (a < value) ? setC() : zeroC();
     ((result & 0xFF) == 0) ? setZ() : zeroZ();
     setN();
 
@@ -877,8 +911,15 @@ void inc_RR(uint8_t opcode) //Time for the whole registers. Supposedly doesn't c
         case 3: //Stack Pointer
             changeSP(1);
             break;
-        default:
-            writeReg(src, readReg(src)+1);
+        case 0:
+            writeReg(B, readReg(B)+1);
+            break;
+        case 1:
+            writeReg(D, readReg(D)+1);
+            break;
+        case 2:
+            writeReg(H, readReg(H)+1);
+            break;
     }
     incPC(1);
     cycles +=2;
@@ -891,8 +932,15 @@ void dec_RR(uint8_t opcode) //And now we subtract
         case 3: //Stack Pointer
             changeSP(-1);
             break;
-        default:
-            writeReg(src, readReg(src)-1);
+        case 0:
+            writeReg(B, readReg(B)-1);
+            break;
+        case 1:
+            writeReg(D, readReg(D)-1);
+            break;
+        case 2:
+            writeReg(H, readReg(H)-1);
+            break;
     }
     incPC(1);
     cycles +=2;
@@ -901,19 +949,28 @@ void dec_RR(uint8_t opcode) //And now we subtract
 void add_HLrr(uint8_t opcode) //Add some register pair into HL
 {
     int dest = (opcode >> 4)&0x3;
-    uint32_t result;
+    uint32_t result = 0;
     switch(dest){
         case 3:
-            result = readReg(2) + getSP();
-            (readReg(2)&0x0FFF)+(getSP()&0x0FFF)>0x0FFF?setH():zeroH();
+            result = readReg(H) + getSP();
+            (readReg(H)&0x0FFF)+(getSP()&0x0FFF)>0x0FFF?setH():zeroH();
             break;
-        default:
-            result = readReg(dest) + readReg(2);
-            (readReg(2)&0x0FFF)+(readReg(dest)&0x0FFF)>0x0FFF?setH():zeroH();
+        case 0:
+            result = readReg(B) + readReg(H);
+            (readReg(H)&0x0FFF)+(readReg(B)&0x0FFF)>0x0FFF?setH():zeroH();
+            break;
+        case 1:
+            result = readReg(D) + readReg(H);
+            (readReg(H)&0x0FFF)+(readReg(D)&0x0FFF)>0x0FFF?setH():zeroH();
+            break;
+        case 2:
+            result = readReg(H) + readReg(H);
+            (readReg(H)&0x0FFF)+(readReg(H)&0x0FFF)>0x0FFF?setH():zeroH();
+            break;
     }
     result>0xFFFF?setC():zeroC();
     zeroN();
-    writeReg(2,result& 0xFFFF);
+    writeReg(H,result& 0xFFFF);
     incPC(1);
     cycles += 2;
 }
@@ -925,8 +982,8 @@ void DAA() //converts A into BCD. This one was a pain
         if (Hc() || (reg_ret(A) & 0x0F) > 0x09) { writeSmallReg(A, reg_ret(A)+0x6); }
     }
     else {
-      if (Fc()) { writeSmallReg(A, reg_ret(A)-0x60); }
-      if (Hc()) { writeSmallReg(A, reg_ret(A)-0x06); }
+        if (Fc()) { writeSmallReg(A, reg_ret(A)-0x60); setC();}
+        if (Hc()) { writeSmallReg(A, reg_ret(A)-0x06); }
     }
     
     reg_ret(A) == 0?setZ():zeroZ();
@@ -946,7 +1003,7 @@ void CPL() //Flip A's bits
 
 void INCHL() //Increase the contents of memory specified by HL
 {
-    read_byte(readReg(H))+1 > 0xFF?setH():zeroH();
+    (read_byte(readReg(H))&0xF)+1 > 0xFF?setH():zeroH();
     write_byte(readReg(H), read_byte(readReg(H))+1);
     zeroN();
     read_byte(readReg(H)) == 0?setZ():zeroZ();
@@ -954,9 +1011,9 @@ void INCHL() //Increase the contents of memory specified by HL
     cycles+=3;
 }
 
-void DECHL() //Increase the contents of memory specified by HL
+void DECHL() //Decrease the contents of memory specified by HL
 {
-    read_byte(readReg(H))-1 < 0?setH():zeroH();
+    (read_byte(readReg(H))&0xF)-1 < 0?setH():zeroH();
     write_byte(readReg(H), read_byte(readReg(H))-1);
     setN();
     read_byte(readReg(H)) == 0?setZ():zeroZ();
@@ -1117,28 +1174,28 @@ void pushrr(uint8_t opcode) //Push 16-bit reg onto stack
 {
     switch((opcode>>3)&0x7){ //Src is encoded in opcode, goes up by 2s
         case 0:
-            write_byte(getSP(), reg_ret(C)); //Also little-endian drives me insane sometimes, just thought I'd mention this after many, many mistakes
             changeSP(-1);
-            write_byte(getSP(), reg_ret(B));
+            write_byte(getSP(), reg_ret(B)); //Also little-endian drives me insane sometimes, just thought I'd mention this after many, many mistakes
             changeSP(-1);
+            write_byte(getSP(), reg_ret(C));
             break;
         case 2:
-            write_byte(getSP(), reg_ret(E));
             changeSP(-1);
             write_byte(getSP(), reg_ret(D));
             changeSP(-1);
+            write_byte(getSP(), reg_ret(E));
             break;
         case 4:
-            write_byte(getSP(), reg_ret(L));
             changeSP(-1);
             write_byte(getSP(), reg_ret(H));
             changeSP(-1);
+            write_byte(getSP(), reg_ret(L));
             break;
         case 6:
-            write_byte(getSP(), reg_ret(F));
             changeSP(-1);
             write_byte(getSP(), reg_ret(A));
             changeSP(-1);
+            write_byte(getSP(), reg_ret(F));
             break;
         default:
             throw std::runtime_error("Invalid register");
@@ -1157,15 +1214,15 @@ void poprr(uint8_t opcode) //See above, but pop
             changeSP(1);
             break;
         case 2:
-            writeSmallReg(D,read_byte(getSP()));
+            writeSmallReg(E,read_byte(getSP()));
             changeSP(1);
-            writeSmallReg(E, read_byte(getSP()));
+            writeSmallReg(D, read_byte(getSP()));
             changeSP(1);
             break;
         case 4:
-            writeSmallReg(H,read_byte(getSP()));
+            writeSmallReg(L,read_byte(getSP()));
             changeSP(1);
-            writeSmallReg(L, read_byte(getSP()));
+            writeSmallReg(H, read_byte(getSP()));
             changeSP(1);
             break;
         case 6:
