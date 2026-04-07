@@ -11,4 +11,10 @@
 
 #include <stdio.h>
 #include <cstdint>
+#include "MMU.hpp"
+
+extern bool last_result = false;
+extern uint16_t divCounter;
+
+void doTimers();
 #endif /* Timers_hpp */
