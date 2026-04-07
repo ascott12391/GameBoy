@@ -20,7 +20,7 @@ void init_table(std::array<OpFunc, 256>& opcode_table,
                 std::array<OpFunc, 256>& CBopcode_table);
 
 void bootUp();
-void handelInterrupts();
+void handleInterrupts();
 
 int main(int argc, const char * argv[])
 {
@@ -52,6 +52,7 @@ int main(int argc, const char * argv[])
             CBopcode_table[opcode](opcode);
         }
         else{opcode_table[opcode](opcode);}
+        handleInterrupts();
     }
     
 }

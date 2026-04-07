@@ -7,18 +7,27 @@
 
 #include "Opcodes.hpp"
 
+
 int cycles = 0;
 //MISC
 void NOOP() //No operation
 {
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 bool halt()
 {
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
     return true;
 } //Maybe better way to do this, but for now...
 
@@ -28,6 +37,10 @@ void SCF() //Set carry flag. Hey look, an easy one
     zeroH();
     zeroN();
     incPC(1);
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
     cycles++;
 }
 
@@ -37,6 +50,10 @@ void CCF() //Flip carry flag. Another easy one
     zeroH();
     zeroN();
     incPC(1);
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
     cycles++;
 }
 
@@ -44,13 +61,21 @@ void EI() //Enables interrupts.
 {
     setIME();
     incPC(1);
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
     cycles++;
 }
 
 void DI() //Disables interrupts.
 {
     resIME();
-    incPC(1);
+    incPC(1);    
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
     cycles++;
 }
 
@@ -67,12 +92,20 @@ void bit(uint8_t opcode) //Writes the compliment of some bit into the zero flag
         addr = readReg(H);
         data = read_byte(addr);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else{data = reg_ret(reg);}
     (data&(1<<bit))==0?setZ():zeroZ();
     zeroN();
     setH();
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
     incPC(2);
 }
 
@@ -89,6 +122,10 @@ void set(uint8_t opcode) //Sets a bit
         addr = readReg(H);
         data = read_byte(addr);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else{data = reg_ret(reg);}
     data = data | (1<<bit);
@@ -97,6 +134,10 @@ void set(uint8_t opcode) //Sets a bit
     zeroN();
     setH();
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
     incPC(2);
 }
 
@@ -113,6 +154,10 @@ void res(uint8_t opcode) //Zeros a bit
         addr = readReg(H);
         data = read_byte(addr);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else{data = reg_ret(reg);}
     data = data & ~(1<<bit);
@@ -121,6 +166,10 @@ void res(uint8_t opcode) //Zeros a bit
     zeroN();
     setH();
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
     incPC(2);
 }
 
@@ -129,6 +178,10 @@ void JPNN() //Jump to 16 bit immediate
 {
     setPC(read_word(getPC()+1));
     cycles += 4;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void JPNZa16() //Jump to 16 bit immediate if Z flag is 0
@@ -137,11 +190,19 @@ void JPNZa16() //Jump to 16 bit immediate if Z flag is 0
     {
         setPC(read_word(getPC()+1));
         cycles += 4;
+        for (int i = 0; i < 16; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -151,11 +212,19 @@ void JPNCa16() //Jump to 16 bit immediate if C flag is 0
     {
         setPC(read_word(getPC()+1));
         cycles += 4;
+        for (int i = 0; i < 16; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -165,11 +234,19 @@ void JPZa16() //Jump to 16 bit immediate if Z flag is 1
     {
         setPC(read_word(getPC()+1));
         cycles += 4;
+        for (int i = 0; i < 16; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -179,11 +256,19 @@ void JPCa16() //Jump to 16 bit immediate if C flag is 1
     {
         setPC(read_word(getPC()+1));
         cycles += 4;
+        for (int i = 0; i < 16; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -192,36 +277,96 @@ void JRs8() //Jump some steps ahead in the PC
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
     setPC(getPC()+2+offset);
     cycles += 3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void JRNZs8() //Jump some steps ahead if zero flag is 0
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
-    if (Z()) {incPC(2); cycles+=2;}
-    else {   setPC(getPC()+2+offset); cycles+=3;}
+    if (Z()) {
+        incPC(2); 
+        cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
+    }
+    else {
+        setPC(getPC()+2+offset); 
+        cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
+    }
     
 }
 
 void JRNCs8() //Jump some steps ahead if carry flag is 0
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
-    if (Fc()) {incPC(2); cycles+=2;}
-    else {   setPC(getPC()+2+offset); cycles+=3;}
+    if (Fc()) {
+        incPC(2); 
+        cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
+    }
+    else {
+        setPC(getPC()+2+offset);
+        cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
+    }
     
 }
 
 void JRZs8() //Jump some steps ahead if zero flag is 1
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
-    if (Z()) {setPC(getPC()+2+offset); cycles+=3;}
-    else {incPC(2); cycles+=2;}
+    if (Z()) {
+        setPC(getPC()+2+offset);
+        cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
+    }
+    else {
+        incPC(2);
+        cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
+    }
 }
 
 void JRCs8() //Jump some steps ahead if carry flag is 1
 {
     int8_t offset = int8_t(read_byte(getPC() + 1)); //These are signed
-    if (Fc()) {setPC(getPC()+2+offset); cycles+=3;}
-    else {incPC(2); cycles+=2;}
+    if (Fc()) {
+        setPC(getPC()+2+offset); 
+        cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
+    }
+    else {
+        incPC(2);
+        cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
+    }
 }
 
 void Calla16() //Jump with return to the immediate 16 bit address
@@ -233,6 +378,10 @@ void Calla16() //Jump with return to the immediate 16 bit address
     write_byte(getSP(), ret & 0xFF);
     setPC(read_word(getPC()+1));
     cycles+=6;
+    for (int i = 0; i < 24; i++)
+    {
+        doTimers();
+    }
 }
 
 void CALLNZa16() //You should get the idea by now, do the thing if the thing is zero
@@ -246,11 +395,19 @@ void CALLNZa16() //You should get the idea by now, do the thing if the thing is 
         write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
+        for (int i = 0; i < 24; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -265,11 +422,19 @@ void CALLNCa16() //You should get the idea by now, do the thing if the thing is 
         write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
+        for (int i = 0; i < 24; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -284,11 +449,20 @@ void CALLZa16() //You should get the idea by now, do the thing if the thing is o
         write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
+        for (int i = 0; i < 24; i++)
+        {
+            doTimers();
+        }
+
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -303,11 +477,19 @@ void CALLCa16() //You should get the idea by now, do the thing if the thing is o
         write_byte(getSP(), ret & 0xFF);
         setPC(read_word(getPC()+1));
         cycles+=6;
+        for (int i = 0; i < 24; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(3);
         cycles+=3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -319,6 +501,10 @@ void Ret() //Return
     changeSP(1);
     setPC((hi << 8) | lo);
     cycles += 4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 void RETI() //Return but enable interrupts
@@ -330,6 +516,10 @@ void RETI() //Return but enable interrupts
     changeSP(1);
     setPC((hi << 8) | lo);
     cycles += 4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 void ret_nz() //Return if the Z flag is 0
@@ -342,11 +532,19 @@ void ret_nz() //Return if the Z flag is 0
         changeSP(1);
         setPC((hi << 8) | lo);
         cycles += 5;
+        for (int i = 0; i < 20; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(1);
         cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -360,11 +558,19 @@ void ret_nc() //Return if the C flag is 0
         changeSP(1);
         setPC((hi << 8) | lo);
         cycles += 5;
+        for (int i = 0; i < 20; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(1);
         cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -378,11 +584,19 @@ void ret_z() //Return if the Z flag is 1
         changeSP(1);
         setPC((hi << 8) | lo);
         cycles += 5;
+        for (int i = 0; i < 20; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(1);
         cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -396,11 +610,19 @@ void ret_c() //Return if the C flag is 1
         changeSP(1);
         setPC((hi << 8) | lo);
         cycles += 5;
+        for (int i = 0; i < 20; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         incPC(1);
         cycles+=2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
 }
 
@@ -419,12 +641,21 @@ void RST(uint8_t opcode) //This one looks weird (at least it does to me), basica
     setPC(addr);
 
     cycles += 4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 void JPHL() //Jump to the address in HL. Pretty easy
 {
     setPC(readReg(H));
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
+
 }
 
 
@@ -438,12 +669,20 @@ void LD_rr(uint8_t opcode) //Load something into something else
         if (dest == 7){dest = 6;}
         writeSmallReg(dest, read_byte(readReg(H)));
         cycles += 2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
     else if (dest == 6) //I know what you may be wondering. "But Alex, what if you have an opcode that reads HL into HL?"
     {
         if (src == 7){src = 6;}
         write_byte(readReg(H), reg_ret(src)); //We don't. Instead we have the HALT command there.
         cycles += 2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
@@ -451,6 +690,10 @@ void LD_rr(uint8_t opcode) //Load something into something else
         if (src == 7){src = 6;}
         writeSmallReg(dest, reg_ret(src)); //Don't ask me why load B into B or whatever is a thing though (it is)
         cycles++;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
     incPC(1);
 }
@@ -462,16 +705,28 @@ void LD_d8(uint8_t opcode) //Load immediate 8-bit operand into w/e
     {
         write_byte(readReg(H), read_byte(getPC()+1));
         cycles += 3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }    
     else if (dest == 7)
     {
         writeSmallReg(A, read_byte(getPC()+1));
         cycles += 2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         writeSmallReg(dest, read_byte(getPC()+1));
         cycles += 2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
     incPC(2);
 }
@@ -481,6 +736,10 @@ void LDAa16() //Load the contents of the address specificed by the immediate 16 
     writeSmallReg(A, read_byte(read_word(getPC()+1)));
     incPC(3);
     cycles += 4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 void LDa16A() //Opposite of above
@@ -488,6 +747,10 @@ void LDa16A() //Opposite of above
     write_byte(read_word(getPC()+1), reg_ret(A));
     incPC(3);
     cycles += 4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 void LD_d16(uint8_t opcode) //Load 16 bit immediate into shit
@@ -512,6 +775,10 @@ void LD_d16(uint8_t opcode) //Load 16 bit immediate into shit
     }
     incPC(3);
     cycles += 3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void LD_rrA(uint8_t opcode) //Load A into address specified by register
@@ -535,6 +802,10 @@ void LD_rrA(uint8_t opcode) //Load A into address specified by register
     }
     incPC(1);
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void LD_Arr(uint8_t opcode) //Opposite of above, write into A
@@ -559,6 +830,10 @@ void LD_Arr(uint8_t opcode) //Opposite of above, write into A
     }
     incPC(1);
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void LDHL_d8() //Load 8-bit immediate into location shown by HL
@@ -566,6 +841,10 @@ void LDHL_d8() //Load 8-bit immediate into location shown by HL
     write_byte(readReg(H), read_byte(getPC()+1));
     incPC(2);
     cycles += 3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void LDa8A() //Stores register A into the 8-bit immediate address
@@ -574,6 +853,10 @@ void LDa8A() //Stores register A into the 8-bit immediate address
     write_byte(0xFF00 + offset, reg_ret(A)); //Well, as you can see here, the beginning for this address is always 0xFF
     incPC(2); //Neat!
     cycles+=3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void LDAa8() //Opposite of above
@@ -582,6 +865,10 @@ void LDAa8() //Opposite of above
     writeSmallReg(A, read_byte(0xFF00 + offset));
     incPC(2);
     cycles+=3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void LDCA() //Stores A into the register pointed to by C
@@ -589,6 +876,10 @@ void LDCA() //Stores A into the register pointed to by C
     write_byte(reg_ret(C)+0xFF00, reg_ret(A)); //But it's fun to think about why the developers did that
     incPC(1); //Also, as above the address always starts w/ 0xFF
     cycles += 2; //The reason for that I do know. It just has to do with the way memory is mapped
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 //MATH
@@ -599,6 +890,10 @@ void XORA () //A XOR A. The observant among you will notice this always zeros it
     writeSmallReg(F, 0x80);
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void CPA8() //Compare A to the 8-bit immediate, if they are the same, set 0 flag. Does not change data
@@ -609,6 +904,10 @@ void CPA8() //Compare A to the 8-bit immediate, if they are the same, set 0 flag
     setN();
     cycles += 2;
     incPC(2);
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void CPAr(uint8_t opcode) //Same as above but w/ various registers instead of immediate
@@ -619,11 +918,19 @@ void CPAr(uint8_t opcode) //Same as above but w/ various registers instead of im
     {
         comp = reg_ret(A) - read_byte(readReg(H));
         cycles += 2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
         comp = reg_ret(A) - reg_ret(src);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     if (comp == 0) {setZ();}
     else {zeroZ();}
@@ -642,7 +949,11 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
         else {zeroH();}
         data++;
         write_byte(readReg(H), data);
-        cycles += 3;
+        cycles += 3;    
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
     else if (dest == 7) //This one is actually A, not F. Exact same as below, but different encoding on the opcode
     {
@@ -652,6 +963,10 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
         data++;
         writeSmallReg(A, data);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
@@ -661,6 +976,10 @@ void inc_rr(uint8_t opcode) //Increases the value stored in some register by one
         data++;
         writeSmallReg(dest, data);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     if (data == 0) {setZ();}
     else {zeroZ();}
@@ -680,6 +999,10 @@ void dec_rr(uint8_t opcode) //Same as above, but decreases instead
         data--;
         write_byte(readReg(3), data);
         cycles += 3;
+        for (int i = 0; i < 12; i++)
+        {
+            doTimers();
+        }
     }
     else if (dest == 7)
     {
@@ -689,6 +1012,10 @@ void dec_rr(uint8_t opcode) //Same as above, but decreases instead
         data--;
         writeSmallReg(A, data);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else
     {
@@ -698,6 +1025,10 @@ void dec_rr(uint8_t opcode) //Same as above, but decreases instead
         data--;
         writeSmallReg(dest, data);
         cycles++;
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     if (data == 0) {setZ();}
     else {zeroZ();}
@@ -716,6 +1047,10 @@ void add_rr(uint8_t opcode) //Add regs together, store in A
     {
         value = read_byte(readReg(H));
         cycles += 1; // extra cycle for memory access
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else if(dest == 7)
     {
@@ -737,6 +1072,10 @@ void add_rr(uint8_t opcode) //Add regs together, store in A
 
     incPC(1);
     cycles += 1;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void sub_rr(uint8_t opcode) //Subs regs, store in A
@@ -750,6 +1089,10 @@ void sub_rr(uint8_t opcode) //Subs regs, store in A
     {
         value = read_byte(readReg(H));
         cycles += 1; // extra cycle for memory access
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else if(dest == 7)
     {
@@ -771,6 +1114,10 @@ void sub_rr(uint8_t opcode) //Subs regs, store in A
 
     incPC(1);
     cycles += 1;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void cp_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is affected
@@ -783,6 +1130,10 @@ void cp_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is aff
     {
         value = read_byte(readReg(H));
         cycles += 1; // extra cycle for memory access
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else if(dest == 7)
     {
@@ -803,6 +1154,10 @@ void cp_rr(uint8_t opcode) //Subs regs, but only sets flags. Nothing in A is aff
 
     incPC(1);
     cycles += 1;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void and_rr(uint8_t opcode) //Ands regs, store in A
@@ -815,6 +1170,10 @@ void and_rr(uint8_t opcode) //Ands regs, store in A
     {
         value = read_byte(readReg(H));
         cycles += 1; // extra cycle for memory access
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else if(dest == 7)
     {
@@ -836,6 +1195,10 @@ void and_rr(uint8_t opcode) //Ands regs, store in A
 
     incPC(1);
     cycles += 1;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void xor_rr(uint8_t opcode) //XORs regs, store in A
@@ -848,6 +1211,10 @@ void xor_rr(uint8_t opcode) //XORs regs, store in A
     {
         value = read_byte(readReg(H));
         cycles += 1; // extra cycle for memory access
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else if(dest == 7)
     {
@@ -869,6 +1236,10 @@ void xor_rr(uint8_t opcode) //XORs regs, store in A
 
     incPC(1);
     cycles += 1;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void or_rr(uint8_t opcode) //ORs regs, store in A
@@ -881,6 +1252,10 @@ void or_rr(uint8_t opcode) //ORs regs, store in A
     {
         value = read_byte(readReg(H));
         cycles += 1; // extra cycle for memory access
+        for (int i = 0; i < 4; i++)
+        {
+            doTimers();
+        }
     }
     else if(dest == 7)
     {
@@ -902,6 +1277,10 @@ void or_rr(uint8_t opcode) //ORs regs, store in A
 
     incPC(1);
     cycles += 1;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void inc_RR(uint8_t opcode) //Time for the whole registers. Supposedly doesn't check flags, so...
@@ -923,6 +1302,10 @@ void inc_RR(uint8_t opcode) //Time for the whole registers. Supposedly doesn't c
     }
     incPC(1);
     cycles +=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void dec_RR(uint8_t opcode) //And now we subtract
@@ -944,6 +1327,10 @@ void dec_RR(uint8_t opcode) //And now we subtract
     }
     incPC(1);
     cycles +=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void add_HLrr(uint8_t opcode) //Add some register pair into HL
@@ -972,6 +1359,10 @@ void add_HLrr(uint8_t opcode) //Add some register pair into HL
     zeroN();
     writeReg(H,result& 0xFFFF);
     incPC(1);
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
     cycles += 2;
 }
 
@@ -990,6 +1381,10 @@ void DAA() //converts A into BCD. This one was a pain
     zeroH();
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void CPL() //Flip A's bits
@@ -998,6 +1393,10 @@ void CPL() //Flip A's bits
     setN();
     setH();
     incPC(1);
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
     cycles++;
 }
 
@@ -1009,6 +1408,10 @@ void INCHL() //Increase the contents of memory specified by HL
     read_byte(readReg(H)) == 0?setZ():zeroZ();
     incPC(1);
     cycles+=3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void DECHL() //Decrease the contents of memory specified by HL
@@ -1019,6 +1422,10 @@ void DECHL() //Decrease the contents of memory specified by HL
     read_byte(readReg(H)) == 0?setZ():zeroZ();
     incPC(1);
     cycles+=3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void ADDAd8() //Add 8 bit immediate to A
@@ -1035,6 +1442,10 @@ void ADDAd8() //Add 8 bit immediate to A
     writeSmallReg(A, result&0xFF);
     incPC(2);
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void SUBAd8() //Subs 8 bit immediate to A
@@ -1052,6 +1463,10 @@ void SUBAd8() //Subs 8 bit immediate to A
 
     incPC(2);
     cycles += 2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void ANDAd8() //Ands 8 bit immediate to A
@@ -1069,6 +1484,10 @@ void ANDAd8() //Ands 8 bit immediate to A
 
     incPC(2);
     cycles += 2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void ORAd8() //Ors 8 bit immediate to A
@@ -1086,6 +1505,10 @@ void ORAd8() //Ors 8 bit immediate to A
 
     incPC(2);
     cycles += 2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void ADCAd8() //Add 8 bit immediate with carry to A
@@ -1102,6 +1525,10 @@ void ADCAd8() //Add 8 bit immediate with carry to A
     writeSmallReg(A, result&0xFF);
     incPC(2);
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void SBCAd8() //Subs 8 bit immediate to A w/ carry
@@ -1119,6 +1546,10 @@ void SBCAd8() //Subs 8 bit immediate to A w/ carry
 
     incPC(2);
     cycles += 2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void XORAd8() //Ors 8 bit immediate to A
@@ -1136,6 +1567,10 @@ void XORAd8() //Ors 8 bit immediate to A
 
     incPC(2);
     cycles += 2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void CPAd8() //Just in case you forgot, this subs, but doesn't affect A. Just flags
@@ -1151,6 +1586,10 @@ void CPAd8() //Just in case you forgot, this subs, but doesn't affect A. Just fl
 
     incPC(2);
     cycles += 2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 void ADDSPs8() // Adds the SIGNED 8-bit immediate to SP
@@ -1166,6 +1605,10 @@ void ADDSPs8() // Adds the SIGNED 8-bit immediate to SP
     changeSP(imm);
     incPC(2);
     cycles+=4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 //STACK
@@ -1202,6 +1645,10 @@ void pushrr(uint8_t opcode) //Push 16-bit reg onto stack
     }
     incPC(1);
     cycles += 4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 void poprr(uint8_t opcode) //See above, but pop
@@ -1236,6 +1683,10 @@ void poprr(uint8_t opcode) //See above, but pop
     }
     incPC(1);
     cycles += 4;
+    for (int i = 0; i < 16; i++)
+    {
+        doTimers();
+    }
 }
 
 void LD_a16SP() //Load stack pointer into 16-bit address given by next 2 bytes
@@ -1245,6 +1696,10 @@ void LD_a16SP() //Load stack pointer into 16-bit address given by next 2 bytes
     write_byte(addr+1, SP >> 8);
     incPC(3);
     cycles+=5;
+    for (int i = 0; i < 20; i++)
+    {
+        doTimers();
+    }
 }
 
 void LDHLSP_d8() //adds the SIGNED immediate to SP and stores in HL
@@ -1259,6 +1714,10 @@ void LDHLSP_d8() //adds the SIGNED immediate to SP and stores in HL
     writeReg(H, result);
     incPC(2);
     cycles+=3;
+    for (int i = 0; i < 12; i++)
+    {
+        doTimers();
+    }
 }
 
 void LDSPHL() //Load HL into SP
@@ -1266,6 +1725,10 @@ void LDSPHL() //Load HL into SP
     setSP(readReg(H));
     incPC(1);
     cycles+=2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 //Rotates
@@ -1277,6 +1740,10 @@ void RCLA() //Rotate A left with a carry
     writeSmallReg(F, carry << 4); //F is reset except for carry flag
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void RCRA() //Rotate A right with a carry
@@ -1286,6 +1753,10 @@ void RCRA() //Rotate A right with a carry
     writeSmallReg(F, carry >> 4);
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void RLA() //This is same as above, but count the carry flag in A sorta thing. Pretty simple
@@ -1298,6 +1769,10 @@ void RLA() //This is same as above, but count the carry flag in A sorta thing. P
     writeSmallReg(A, (reg_ret(A) << 1)|oldCarry);
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void RRA() //Take it right now ya'll...
@@ -1310,6 +1785,10 @@ void RRA() //Take it right now ya'll...
     writeSmallReg(A, (reg_ret(A) >> 1)|(oldCarry<<7));
     incPC(1);
     cycles++;
+    for (int i = 0; i < 4; i++)
+    {
+        doTimers();
+    }
 }
 
 void rotate(uint8_t opcode) //Rotates or shifts regs. This is the most complicated CB opcode.
@@ -1325,6 +1804,10 @@ void rotate(uint8_t opcode) //Rotates or shifts regs. This is the most complicat
         addr = readReg(H);
         data = read_byte(addr);
         cycles += 2;
+        for (int i = 0; i < 8; i++)
+        {
+            doTimers();
+        }
     } else {
         data = reg_ret(reg);
     }
@@ -1387,6 +1870,10 @@ void rotate(uint8_t opcode) //Rotates or shifts regs. This is the most complicat
 
     incPC(2);
     cycles += 2;
+    for (int i = 0; i < 8; i++)
+    {
+        doTimers();
+    }
 }
 
 
