@@ -9,7 +9,7 @@
 
 reg AF{0x01, 0x00}, BC{0xFF, 0x13}, DE{0x00, 0xC1}, HL{0x84, 0x03}; //Trying to get this working at a baseline b4 Starbies closes
 uint16_t pc = 0x0100; //Skip Boot ROM for now [asdf]
-int timer = 0; //Probably wrong, fix later [asdf]
+int timer = 0; //Probably wrong, fix later [fixed]
 uint16_t SP = 0xFFFE;
 bool IME = false;
 bool halted = false;

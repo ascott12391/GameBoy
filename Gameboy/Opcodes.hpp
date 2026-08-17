@@ -17,6 +17,7 @@
 //LAST ONE DONE WAS ALL OF THEM!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! NEED TO ALSO DO 0x10!
 
 extern int cycles; //Does nothing. Just here so shit don't break.
+extern int IME_schedule; //EI is delayed by one inst
 void NOOP(); //0x00
 void JPNN(); //0xC3
 void JRs8(); //0x18

@@ -9,6 +9,7 @@
 
 
 int cycles = 0;
+int IME_schedule = 0;
 //MISC
 void NOOP() //No operation
 {
@@ -59,7 +60,7 @@ void CCF() //Flip carry flag. Another easy one
 
 void EI() //Enables interrupts.
 {
-    setIME();
+    IME_schedule = 2;
     incPC(1);
     for (int i = 0; i < 4; i++)
     {

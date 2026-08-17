@@ -27,7 +27,7 @@ void write_byte(uint16_t addr, uint8_t data)
         memory[addr] = 0;
         return;
     }
-    if (addr == 0xD81A)
+    if (addr == 0xFF0F)
     {
         data = data;
         addr = addr;
@@ -39,6 +39,11 @@ void write_byte(uint16_t addr, uint8_t data)
         char c = memory[0xFF01];
         std::cout << c << std::flush;
     }
+}
+
+void write_div(uint8_t data) //So I can manually write to DIV without a reset
+{
+    memory[0xFF04] = data;
 }
 
 void write_word(uint16_t addr, uint16_t data)

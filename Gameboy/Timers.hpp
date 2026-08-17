@@ -13,8 +13,9 @@
 #include <cstdint>
 #include "MMU.hpp"
 
-extern bool last_result = false;
+extern bool last_result;
 extern uint16_t divCounter;
+extern int timer_reload_delay;
 
 void doTimers();
 #endif /* Timers_hpp */

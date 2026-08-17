@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FA8B67A32FA26C0B0044EB62 /* PPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FA8B67A12FA26C0B0044EB62 /* PPU.cpp */; };
 		FAA5FD2128AB06AD0057F57D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA5FD2028AB06AD0057F57D /* main.cpp */; };
 		FAC0B7FE2F25701000A27F02 /* MMU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAC0B7FC2F25701000A27F02 /* MMU.cpp */; };
 		FAC0B8012F25760500A27F02 /* CPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAC0B7FF2F25760500A27F02 /* CPU.cpp */; };
 		FAC0B8042F29722500A27F02 /* Opcodes.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAC0B8022F29722500A27F02 /* Opcodes.cpp */; };
+		FAD9D8CB2F84EA10008D701E /* Timers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAD9D8C92F84EA10008D701E /* Timers.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -26,6 +28,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FA8B67A12FA26C0B0044EB62 /* PPU.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PPU.cpp; sourceTree = "<group>"; };
+		FA8B67A22FA26C0B0044EB62 /* PPU.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PPU.hpp; sourceTree = "<group>"; };
 		FAA5FD1D28AB06AD0057F57D /* Gameboy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Gameboy; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAA5FD2028AB06AD0057F57D /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		FAC0B7FC2F25701000A27F02 /* MMU.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = MMU.cpp; sourceTree = "<group>"; };
@@ -34,6 +38,8 @@
 		FAC0B8002F25760500A27F02 /* CPU.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = CPU.hpp; sourceTree = "<group>"; };
 		FAC0B8022F29722500A27F02 /* Opcodes.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = Opcodes.cpp; sourceTree = "<group>"; };
 		FAC0B8032F29722500A27F02 /* Opcodes.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = Opcodes.hpp; sourceTree = "<group>"; };
+		FAD9D8C92F84EA10008D701E /* Timers.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Timers.cpp; sourceTree = "<group>"; };
+		FAD9D8CA2F84EA10008D701E /* Timers.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = Timers.hpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -66,6 +72,8 @@
 		FAA5FD1F28AB06AD0057F57D /* Gameboy */ = {
 			isa = PBXGroup;
 			children = (
+				FAD9D8C92F84EA10008D701E /* Timers.cpp */,
+				FAD9D8CA2F84EA10008D701E /* Timers.hpp */,
 				FAA5FD2028AB06AD0057F57D /* main.cpp */,
 				FAC0B7FC2F25701000A27F02 /* MMU.cpp */,
 				FAC0B7FD2F25701000A27F02 /* MMU.hpp */,
@@ -73,6 +81,8 @@
 				FAC0B8002F25760500A27F02 /* CPU.hpp */,
 				FAC0B8022F29722500A27F02 /* Opcodes.cpp */,
 				FAC0B8032F29722500A27F02 /* Opcodes.hpp */,
+				FA8B67A12FA26C0B0044EB62 /* PPU.cpp */,
+				FA8B67A22FA26C0B0044EB62 /* PPU.hpp */,
 			);
 			path = Gameboy;
 			sourceTree = "<group>";
@@ -136,6 +146,8 @@
 			files = (
 				FAC0B8012F25760500A27F02 /* CPU.cpp in Sources */,
 				FAC0B8042F29722500A27F02 /* Opcodes.cpp in Sources */,
+				FAD9D8CB2F84EA10008D701E /* Timers.cpp in Sources */,
+				FA8B67A32FA26C0B0044EB62 /* PPU.cpp in Sources */,
 				FAA5FD2128AB06AD0057F57D /* main.cpp in Sources */,
 				FAC0B7FE2F25701000A27F02 /* MMU.cpp in Sources */,
 			);

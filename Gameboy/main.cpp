@@ -52,7 +52,17 @@ int main(int argc, const char * argv[])
             CBopcode_table[opcode](opcode);
         }
         else{opcode_table[opcode](opcode);}
+        if (IME_schedule > 0) {
+            IME_schedule--;
+            if (IME_schedule == 0) {
+                IME = true;
+            }
+        }
         handleInterrupts();
+        for (int i = 0; i < 20; i++)
+        {
+            doTimers();
+        }
     }
     
 }
@@ -244,16 +254,19 @@ void bootUp() //Boot sequence
     setSP(0xFFFE);
     resIME();
     halted = false;
+    IME_schedule = false;
+    timer_reload_delay = -1;
 }
 
 void handleInterrupts()
 {
-    halted = false; //Wake up CPU if halted. Even if not IME. This is the Halt Bug.
+    halted = false; //Wake up CPU if halted. Even if not IME. This is the Halt Bug. Future Alex here, this is wrong. Fix Later [asdf]
     if(!IME){return;} //If interrupts are disabled, we don't interrupt
     uint8_t IE = read_byte(0xFFFF); //This is a more minor version of IME for specific interrupts
     uint8_t IF = read_byte(0xFF0F); //This calls interrupts
     uint8_t interrupts = IE&IF;
-    if (interrupts == 0) {return;} //If the interrupt being called is disabled, no.    resIME(); //Turn it off every time
+    if (interrupts == 0) {return;} //If the interrupt being called is disabled, no.
+    resIME(); //Turn it off every time
     for (int i = 0; i < 5; i++) //Goes from right to left basically
     {
         if (interrupts & (1<<i))

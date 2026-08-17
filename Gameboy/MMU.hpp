@@ -15,4 +15,5 @@ void write_word(uint16_t addr, uint16_t data);
 void write_byte(uint16_t addr, uint8_t data);
 uint8_t read_byte(uint16_t addr);
 uint16_t read_word(uint16_t addr);
+void write_div(uint8_t data);
 #endif /* MMU_hpp */
