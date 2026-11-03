@@ -6,12 +6,29 @@
 //
 // Heads up, I tag stuff [asdf] so I ctrl+F for it later to come back to. Otherwise I'd probably forget what I wanted to fix later. I use [asdf] because it (probably) won't show up in actual code.
 
+#define SDL_MAIN_USE_CALLBACKS 1
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <array>
 #include "Opcodes.hpp"
+#include "PPU.hpp"
+#include "CPU.hpp"
+#include "MMU.hpp"
+#include "Timers.hpp"
+
 typedef unsigned char BYTE;
+
+static SDL_Window *window = NULL;
+static SDL_Renderer *renderer = NULL;
+
+FILE* logger = fopen("log.txt", "w");
+
+std::array<void(*)(uint8_t), 256> opcode_table;
+std::array<void(*)(uint8_t), 256> CBopcode_table;
+
 void logData(FILE* logger, uint8_t opcode);
 
 
@@ -21,8 +38,110 @@ void init_table(std::array<OpFunc, 256>& opcode_table,
 
 void bootUp();
 void handleInterrupts();
+void convertFramebuffer(uint8_t* pixels);
 
-int main(int argc, const char * argv[])
+SDL_Texture* screenTexture = NULL;
+
+SDL_AppResult SDL_AppInit(void **appstate, int arc, char *argv[]) //runs once at startup
+{
+    
+    SDL_SetAppMetadata("Gameboy Emulator", "pre-alpha", "ascottmi");
+    if (!SDL_Init(SDL_INIT_VIDEO))
+    {
+        SDL_Log("Couldn't initialize SDL: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+    if (!SDL_CreateWindowAndRenderer("GAMEBOY", 640, 576, SDL_WINDOW_RESIZABLE, &window, &renderer))//Could change the name to name of game for fun
+    {
+        SDL_Log("Couldn't create window/renderer: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+    SDL_SetRenderLogicalPresentation(renderer, 640, 576, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    screenTexture = SDL_CreateTexture(
+        renderer,
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_STREAMING,
+        160,
+        144
+    );
+    bootUp();
+    long size;
+    std::ifstream game("./gb-test-roms-master/instr_timing/instr_timing.gb", std::ios::binary| std::ios::in);
+    if (!game) {std::cout << "No ROM detected"; return SDL_APP_FAILURE;}
+    game.seekg(0, std::ios::end);
+    size = game.tellg();
+    game.seekg(0, std::ios::beg);
+    std::vector<BYTE> romData(size);
+    game.read((char*) &romData[0], size);
+    for (int i = 0; i <= 0x7FFF; i++) //Very bad doesn't work w/ banking, fix later [asdf]
+    {
+        memory[i] = romData[i];
+    }
+    init_table(opcode_table, CBopcode_table);
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
+{
+    if (event-> type == SDL_EVENT_QUIT)
+    {
+        return SDL_APP_SUCCESS;
+    }
+    return SDL_APP_CONTINUE;
+}
+
+SDL_AppResult SDL_AppIterate(void *appstate) //Runs every frame
+{
+    uint8_t pixels[160 * 144 * 4];
+
+    renderBackground();
+    convertFramebuffer(pixels);
+
+    SDL_UpdateTexture(
+        screenTexture,
+        nullptr,
+        pixels,
+        160 * 4
+    );
+
+    SDL_RenderClear(renderer);
+    SDL_RenderTexture(renderer, screenTexture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+    BYTE opcode;
+    opcode = read_byte(getPC());
+    logData(logger, opcode);
+    if (opcode == 0xCB) {
+        opcode = read_byte(getPC()+1);
+        CBopcode_table[opcode](opcode);
+    }
+    else{opcode_table[opcode](opcode);}
+    if (IME_schedule > 0) {
+        IME_schedule--;
+        if (IME_schedule == 0) {
+            IME = true;
+        }
+    }
+    handleInterrupts();
+    for (int i = 0; i < 20; i++)
+    {
+        doTimers();
+    }
+    if (halted)
+    {
+        SDL_Quit();
+    }
+    
+    return SDL_APP_CONTINUE;
+}
+
+void SDL_AppQuit(void *appstate, SDL_AppResult result) //Runs at shutdown
+{
+
+}
+
+//Now I have to basically configure main to work in the SDL framework. Shouldn't be too bad, I've had a lot of eperience with similar event driven programming before
+
+/*int main(int argc, const char * argv[])
 {
     bootUp();
     FILE* logger = fopen("log.txt", "w");
@@ -65,7 +184,7 @@ int main(int argc, const char * argv[])
         }
     }
     
-}
+}*/
 
 void logData(FILE* logger, uint8_t opcode)
 {
@@ -295,6 +414,25 @@ void handleInterrupts()
             }
             cycles += 5;
             return; //Only service one at a time
+        }
+    }
+}
+
+
+void convertFramebuffer(uint8_t* pixels)
+{
+    for (int y = 0; y < 144; y++)
+    {
+        for (int x = 0; x < 160; x++)
+        {
+            uint8_t shade = shades[framebuffer[y][x]];
+
+            int index = (y * 160 + x) * 4;
+
+            pixels[index + 0] = shade; // R
+            pixels[index + 1] = shade; // G
+            pixels[index + 2] = shade; // B
+            pixels[index + 3] = 255;   // A
         }
     }
 }

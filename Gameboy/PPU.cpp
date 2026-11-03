@@ -7,6 +7,14 @@
 
 #include "PPU.hpp"
 
+uint8_t framebuffer[144][160];
+const uint8_t shades[4] = { //https://gbstudiocentral.com/resources/gb-studio-numbers-cheat-sheet/ For actual colors [asdf]
+    255,  // White
+    170,  // Light gray
+    85,   // Dark gray
+    0     // Black
+};
+
 bool LCDEnabled() //Check if screen is enabled. Bit seven of 0xFF40
 {return (read_byte(0xFF40) & 0x80) != 0;}
 
@@ -30,3 +38,37 @@ bool OBJEnable() //Check if OBJ enabled
 
 bool BGWindowEnable() //Enables BG Window
 {return (read_byte(0xFF40) & 0x1) != 0;}
+
+void renderBackground()
+{
+    uint16_t tileMapAddress = 0x9800; //Needs to be variable, fix later just wanna get something on the screen[asdf]
+    uint16_t tileDataAddress = 0x8000; //See above
+    
+    Tile tiles[384];
+    
+    for (int i = 0; i < 384; ++i)
+    {
+        tiles[i].decode(tileDataAddress + (i*16));
+    }
+    for (int Y = 0; Y < 32; ++Y)
+    {
+        for (int X = 0; X < 32; ++X)
+        {
+            uint16_t tileID = tileMapAddress + (Y*32) + X;
+            tileID /= 16;
+            tileID = tileID % 256;
+            int pixelX = X*8;
+            int pixelY = Y*8;
+            for (int i = 0; i < 8; ++i)
+            {
+                for (int j = 0; j < 8; ++j)
+                {
+                    if (pixelX + j < 160 && pixelY + i < 144)
+                    {
+                        framebuffer[pixelY + i][pixelX + j] = tiles[tileID].pixels[i][j];
+                    }
+                }
+            }
+        }
+    }
+}

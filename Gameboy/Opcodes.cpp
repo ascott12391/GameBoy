@@ -425,13 +425,13 @@ void CALLNCa16() //You should get the idea by now, do the thing if the thing is 
         cycles+=6;
         for (int i = 0; i < 24; i++)
         {
-            doTimers();
-        }
+            doTimers(); //If you can read this, remember to drink water
+        } //Hydration is cool!
     }
-    else
-    {
-        incPC(3);
-        cycles+=3;
+    else //Also remember that if sleep were invented today it'd be banned as too much of a performance enhancer
+    { //Take care of yourself
+        incPC(3); //Unhealthy habits are not a flex
+        cycles+=3; //I believe in you!
         for (int i = 0; i < 12; i++)
         {
             doTimers();

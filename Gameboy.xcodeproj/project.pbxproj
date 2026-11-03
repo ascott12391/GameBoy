@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FA1614C930883F99003723AC /* SDL3.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA1614C730883F81003723AC /* SDL3.framework */; };
+		FA1614CA30883F99003723AC /* SDL3.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = FA1614C730883F81003723AC /* SDL3.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		FA8B67A32FA26C0B0044EB62 /* PPU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FA8B67A12FA26C0B0044EB62 /* PPU.cpp */; };
 		FAA5FD2128AB06AD0057F57D /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAA5FD2028AB06AD0057F57D /* main.cpp */; };
 		FAC0B7FE2F25701000A27F02 /* MMU.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAC0B7FC2F25701000A27F02 /* MMU.cpp */; };
@@ -15,7 +17,28 @@
 		FAD9D8CB2F84EA10008D701E /* Timers.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAD9D8C92F84EA10008D701E /* Timers.cpp */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		FA1614C630883F81003723AC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FA1614C030883F81003723AC /* SDL.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = BECDF66C0761BA81005FE872;
+			remoteInfo = SDL3;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		FA1614CB30883F99003723AC /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				FA1614CA30883F99003723AC /* SDL3.framework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FAA5FD1B28AB06AD0057F57D /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -28,6 +51,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FA1614BF30883F54003723AC /* docs */ = {isa = PBXFileReference; lastKnownFileType = folder; name = docs; path = ../../SDL/docs; sourceTree = "<group>"; };
+		FA1614C030883F81003723AC /* SDL.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = SDL.xcodeproj; path = ../../SDL/Xcode/SDL/SDL.xcodeproj; sourceTree = "<group>"; };
 		FA8B67A12FA26C0B0044EB62 /* PPU.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = PPU.cpp; sourceTree = "<group>"; };
 		FA8B67A22FA26C0B0044EB62 /* PPU.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = PPU.hpp; sourceTree = "<group>"; };
 		FAA5FD1D28AB06AD0057F57D /* Gameboy */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Gameboy; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -47,17 +72,34 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA1614C930883F99003723AC /* SDL3.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		FA1614C130883F81003723AC /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FA1614C730883F81003723AC /* SDL3.framework */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FA1614C830883F98003723AC /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		FAA5FD1428AB06AD0057F57D = {
 			isa = PBXGroup;
 			children = (
 				FAA5FD1F28AB06AD0057F57D /* Gameboy */,
 				FAA5FD1E28AB06AD0057F57D /* Products */,
+				FA1614C830883F98003723AC /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -72,6 +114,8 @@
 		FAA5FD1F28AB06AD0057F57D /* Gameboy */ = {
 			isa = PBXGroup;
 			children = (
+				FA1614C030883F81003723AC /* SDL.xcodeproj */,
+				FA1614BF30883F54003723AC /* docs */,
 				FAD9D8C92F84EA10008D701E /* Timers.cpp */,
 				FAD9D8CA2F84EA10008D701E /* Timers.hpp */,
 				FAA5FD2028AB06AD0057F57D /* main.cpp */,
@@ -97,6 +141,7 @@
 				FAA5FD1928AB06AD0057F57D /* Sources */,
 				FAA5FD1A28AB06AD0057F57D /* Frameworks */,
 				FAA5FD1B28AB06AD0057F57D /* CopyFiles */,
+				FA1614CB30883F99003723AC /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -132,12 +177,28 @@
 			mainGroup = FAA5FD1428AB06AD0057F57D;
 			productRefGroup = FAA5FD1E28AB06AD0057F57D /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = FA1614C130883F81003723AC /* Products */;
+					ProjectRef = FA1614C030883F81003723AC /* SDL.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				FAA5FD1C28AB06AD0057F57D /* Gameboy */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		FA1614C730883F81003723AC /* SDL3.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = SDL3.framework;
+			remoteRef = FA1614C630883F81003723AC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXSourcesBuildPhase section */
 		FAA5FD1928AB06AD0057F57D /* Sources */ = {

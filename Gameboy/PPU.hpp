@@ -38,7 +38,9 @@ class Tile
      Also color 0 is always transparent in sprites*/
 };
 
-uint8_t framebuffer[192][128];
+extern const uint8_t shades[4]; 
+
+extern uint8_t framebuffer[144][160];
 bool LCDEnabled();
 bool tileMapArea();
 bool windowEnabled();
@@ -47,40 +49,8 @@ bool BGTileMapArea();
 bool OBJSize();
 bool OBJEnable();
 bool BGWindowEnable();
+void renderBackground();
 
-void tileViewer()
-{
-    Tile tileArray[384];
-    for (int tile = 0; tile < 384; tile++)
-    {
-        uint16_t address = 0x8000 + (tile * 16);
-        tileArray[tile].decode(address);
-    }
-    for (int tile = 0; tile < 384; tile++)
-    {
-        int tileX = (tile % 16) * 8;
-        int tileY = (tile / 16) * 8;
-
-        for (int y = 0; y < 8; y++)
-        {
-            for (int x = 0; x < 8; x++)
-            {
-                framebuffer[tileY + y][tileX + x] =
-                    tileArray[tile].pixels[y][x];
-            }
-        }
-    }
-    const char* shades = " .:#";
-    for (int i = 0; i < 192; i++)
-    {
-        for (int j = 0; j < 128; j++)
-        {
-            std::cout << shades[framebuffer[i][j]];
-        }
-        std::cout << std::endl;
-    }
-    
-} //This is only for debugging.
 
 
 #endif /* PPU_hpp */
